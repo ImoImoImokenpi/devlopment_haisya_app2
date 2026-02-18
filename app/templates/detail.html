@@ -1,0 +1,79 @@
+{% extends "layout.html" %}
+{% block content %}
+
+<h2>{{ room.name }}</h2>
+<p>{{ room.description }}</p>
+
+<hr>
+
+<h4>現在の登録人数：{{ entry_count }}人</h4>
+
+<hr>
+
+{% if not entry %}
+<!-- =========================
+    参加登録フォーム
+========================= -->
+
+<h3>イベント参加登録</h3>
+
+<form method="POST">
+
+    <h5>車情報</h5>
+    <label>
+        <input type="checkbox" name="has_car"> 車を出せる
+    </label><br>
+
+    定員:
+    <input type="number" name="capacity" min="0" max="8">
+
+    <hr>
+
+    <h5>出演順</h5>
+    <select name="schedule_id" required>
+        <option value="">選択してください</option>
+        {% for s in schedules %}
+            <option value="{{ s.id }}">{{ s.label }}</option>
+        {% endfor %}
+    </select>
+
+    <hr>
+
+    <h5>ジャンル</h5>
+    <input type="text" name="genre">
+
+    <hr>
+
+    <h5>同乗希望</h5>
+    <input type="text" name="prefer_with" placeholder="一緒に乗りたい人">
+
+    <h5>同乗拒否</h5>
+    <input type="text" name="avoid_with" placeholder="避けたい人">
+
+    <hr>
+
+    <h5>出発地点</h5>
+    <input type="text" name="start_location" placeholder="例：〇〇駅">
+
+    <br><br>
+
+    <button class="btn btn-success">登録する</button>
+</form>
+
+{% else %}
+<!-- =========================
+    登録済み表示
+========================= -->
+
+<div class="alert alert-success">
+    あなたはこのイベントに登録済みです。
+</div>
+
+<a class="btn btn-outline-success"
+    href="{{ url_for('matching.preview', room_id=room.id) }}">
+    現在の参加状況を見る
+</a>
+
+{% endif %}
+
+{% endblock %}

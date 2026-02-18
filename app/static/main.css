@@ -1,0 +1,32 @@
+/* ===== ブランドカラー ===== */
+:root{
+    --main-color: #eeeeee;
+    --bg-color: white;
+}
+
+.room-card{
+    border: var(--main-color);
+    border-radius:16px;
+    transition:0.2s;
+}
+
+/* 参加中ルームのヘッダーだけ色変更 */
+.card-header.room-joined{
+    background: linear-gradient(135deg, #20c997, #20c997);
+    color: white;
+    border-bottom: none;
+}
+
+.card-header.room-joined img{
+    border:2px solid white;
+}
+
+.card-header{
+    background: var(--main-color);
+    border-bottom:none;
+}
+
+.card-footer{
+    background:white;
+    border-top:none;
+}

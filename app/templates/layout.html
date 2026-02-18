@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>配車アプリ</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='main.css') }}">
+
+    <style>
+        :root {
+            --walica-green: #20c997;
+            --bg-color: #f8f9fa;
+            --text-dark: #333333;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            font-family: 'Noto Sans JP', sans-serif;
+            color: var(--text-dark);
+        }
+
+        /* ヘッダーナビ */
+        .navbar-walica {
+            background-color: white;
+            border-bottom: 1px solid #eee;
+            padding: 0.8rem 1rem;
+        }
+
+        .navbar-brand {
+            font-weight: 700;
+            color: var(--walica-green) !important;
+            font-size: 1.25rem;
+        }
+
+        /* メインカードのコンテナ */
+        .main-container {
+            max-width: 600px; /* Walicaのように中央に寄せる */
+            margin: 20px auto;
+            padding: 0 15px;
+        }
+
+        .main-card {
+            background: white;
+            border-radius: 20px; /* 角をさらに丸く */
+            padding: 30px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.05); /* 柔らかい影 */
+            border: none;
+        }
+
+        /* ボタンデザイン */
+        .btn-walica {
+            background-color: white;
+            color: var(--walica-green);
+            border: 2px solid var(--walica-green);
+            border-radius: 12px;
+            font-weight: 600;
+
+            /* ←ここだけ追加 */
+            padding-left: 1rem;
+            padding-right: 1rem;
+
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-walica:hover {
+            background-color: #1bad82;
+            color: white;
+            transform: translateY(-1px);
+        }
+
+                /* ボタンデザイン */
+        .btn-walica-reverce {
+            background-color: var(--walica-green);
+            color: white;
+            border: 2px solid var(--walica-green);
+            border-radius: 12px;
+            font-weight: 600;
+
+            /* ←ここだけ追加 */
+            padding-left: 1rem;
+            padding-right: 1rem;
+
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-walica-reverce:hover {
+            background-color: white;
+            color: #1bad82;
+            border: 2px solid var(--walica-green);
+            transform: translateY(-1px);
+        }
+
+        /* リンクスタイル */
+        .nav-link-custom {
+            color: #666;
+            text-decoration: none;
+            font-size: 0.9rem;
+            margin-left: 15px;
+        }
+
+        .nav-link-custom:hover {
+            color: var(--walica-green);
+        }
+
+        /* フッター */
+        footer {
+            color: #bbb;
+            margin: 50px 0 30px;
+            text-align: center;
+            font-size: 12px;
+            letter-spacing: 0.5px;
+        }
+
+        /* スマホ向けの微調整 */
+        @media (max-width: 576px) {
+            .main-card {
+                padding: 20px;
+                border-radius: 15px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<nav class="navbar navbar-walica sticky-top">
+    <div class="container-fluid d-flex align-items-center">
+        <a class="navbar-brand" href="/">Haisya</a>
+        
+        <div class="ms-auto d-flex align-items-center">
+            {% if current_user.is_authenticated %}
+                <a href="/rooms" class="nav-link-custom d-none d-sm-block">ルーム一覧</a>
+                <span class="nav-link-custom text-dark fw-bold">{{ current_user.username }}</span>
+                <a href="/logout" class="nav-link-custom">ログアウト</a>
+            {% else %}
+                <a href="/login" class="nav-link-custom">ログイン</a>
+                <a href="/register" class="btn btn-walica ms-3 py-1 px-3" style="font-size:0.85rem;">新規登録</a>
+            {% endif %}
+        </div>
+    </div>
+</nav>
+
+<div class="main-container">
+    {% if current_user.is_authenticated %}
+    <div class="d-flex justify-content-center mb-4 d-sm-none">
+        <a href="/rooms" class="btn btn-sm btn-outline-secondary rounded-pill me-2"> ルーム一覧 </a>
+        <a href="/rooms/create" class="btn btn-sm btn-walica rounded-pill"> + 作成 </a>
+    </div>
+    {% endif %}
+
+    <div class="main-card">
+        {% block content %}
+        <h2 class="text-center mb-4">ようこそ</h2>
+        <p class="text-muted text-center">配車をスムーズに。割り勘をもっと簡単に。</p>
+        <div class="d-grid gap-2">
+            <button class="btn btn-walica">新しくルームを作る</button>
+        </div>
+        {% endblock %}
+    </div>
+
+    <footer>
+        &copy; 2026 Carpool Matching System
+    </footer>
+</div>
+
+</body>
+</html>

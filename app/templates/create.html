@@ -1,0 +1,50 @@
+{% extends "layout.html" %}
+{% block content %}
+
+<h2>イベントルーム作成</h2>
+
+<form method="POST">
+
+    <h4>基本情報</h4>
+
+    ルーム名<br>
+    <input name="name" required class="form-control"><br>
+
+    説明<br>
+    <textarea name="description" class="form-control"></textarea><br>
+
+    開催日<br>
+    <input type="date" name="event_date" required class="form-control"><br>
+
+    締切時刻<br>
+    <input type="datetime-local" name="deadline" required class="form-control"><br>
+
+    <hr>
+
+    <h4>出演順（いくつでも追加可）</h4>
+
+    <div id="schedule-area">
+        <input name="schedule_label[]" class="form-control mb-2" placeholder="例：1番目">
+    </div>
+
+    <button type="button" class="btn btn-secondary" onclick="addSchedule()">
+        出番を追加
+    </button>
+
+    <hr>
+
+    <button class="btn btn-success">作成</button>
+</form>
+
+<script>
+function addSchedule(){
+    const area = document.getElementById("schedule-area");
+    const input = document.createElement("input");
+    input.name = "schedule_label[]";
+    input.className = "form-control mb-2";
+    input.placeholder = "例：2番目";
+    area.appendChild(input);
+}
+</script>
+
+{% endblock %}
