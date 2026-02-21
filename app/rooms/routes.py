@@ -4,8 +4,19 @@ from ..extensions import db
 from ..models.room import Room
 from ..models.entry import Entry
 from ..models.event_schedule import EventSchedule
-from ..models.room_condition import RoomCondition
+from ..models.room_attachment import RoomAttachment
+from ..models.question_master import QuestionMaster
+from ..models.room_question import RoomQuestion
 from datetime import datetime
+from werkzeug.utils import secure_filename
+import os
+from sqlalchemy import asc
+
+UPLOAD_FOLDER = 'app/static/uploads'
+ALLOWED_EXTENSIONS = {'pdf', 'png', 'jpg', 'jpeg', 'xlsx'}
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 rooms_bp = Blueprint("rooms", __name__, url_prefix="/rooms")
 
@@ -27,48 +38,79 @@ def rooms():
 @rooms_bp.route("/create", methods=["GET", "POST"])
 @login_required
 def create_room():
-        # まずGETならページを表示
-    if request.method == "GET":
-        return render_template("create.html")
-    
-    name = request.form["name"]
-    description = request.form["description"]
-    event_date = request.form["event_date"]
-    deadline = request.form["deadline"]
+    if request.method == "POST":
 
-    
-    event_date = datetime.strptime(event_date, "%Y-%m-%d").date()
-    deadline = datetime.strptime(deadline, "%Y-%m-%dT%H:%M")
+        name = request.form.get("name")
+        description = request.form.get("description")
+        event_date_str = request.form.get("event_date")
+        deadline_str = request.form.get("deadline")
+        sections = int(request.form.get("sections", 1))
 
-    room = Room(
-        name=name, 
-        description=description, 
-        owner_id=current_user.id,
-        event_date=event_date,
-        deadline=deadline
-    )
+        # Date (YYYY-MM-DD)
+        event_date = None
+        if event_date_str:
+            event_date = datetime.strptime(event_date_str, "%Y-%m-%d").date()
 
-    db.session.add(room)
-    db.session.flush()
+        # DateTime (YYYY-MM-DDTHH:MM)
+        deadline = None
+        if deadline_str:
+            deadline = datetime.strptime(deadline_str, "%Y-%m-%dT%H:%M")
 
-    schedules = request.form.getlist("schedule_label[]")
 
-    order = 1
-    for label in schedules:
-        if label.strip() == "":
-            continue
-
-        s = EventSchedule(
-            room_id=room.id,
-            order=order,
-            label=label
+        # ① Room作成
+        room = Room(
+            name=name,
+            description=description,
+            event_date=event_date,
+            deadline=deadline,
+            owner_id=current_user.id
         )
-        db.session.add(s)
-        order += 1
+        db.session.add(room)
+        db.session.flush() 
 
-    db.session.commit()
+        PER_SECTION = 15  # 1部あたりの出番数
 
-    return redirect(url_for("rooms.rooms"))
+        for section in range(1, sections + 1):
+            for order in range(1, PER_SECTION + 1):
+                schedule = EventSchedule(
+                    room_id=room.id,
+                    section=section,
+                    order=order
+                )
+                db.session.add(schedule)
+
+
+        # ③ 質問ON/OFF保存
+        selected_questions = request.form.getlist("questions")
+
+        for qid in selected_questions:
+            rq = RoomQuestion(
+                room_id=room.id,
+                question_id=int(qid)
+            )
+            db.session.add(rq)
+
+        # ④ 添付ファイル
+        file = request.files.get("attachment")
+        if file and file.filename:
+            filename = secure_filename(file.filename)
+            path = os.path.join("app/static/uploads", filename)
+            file.save(path)
+
+            attach = RoomAttachment(
+                room_id=room.id,
+                filename=filename,
+                filepath=path
+            )
+            db.session.add(attach)
+
+        db.session.commit()
+
+        return redirect(url_for("rooms.rooms"))
+
+    # GET：質問一覧を取得
+    questions = QuestionMaster.query.all()
+    return render_template("create.html", questions=questions)
 
 @rooms_bp.route("/<int:room_id>/delete", methods=["POST"])
 @login_required
@@ -102,7 +144,12 @@ def room_detail(room_id):
     ).first()
 
     # 出番一覧
-    schedules = EventSchedule.query.filter_by(room_id=room_id).order_by(EventSchedule.order).all()
+    schedules = (
+        EventSchedule.query
+        .filter_by(room_id=room_id)
+        .order_by(asc(EventSchedule.section), asc(EventSchedule.order))
+        .all()
+    )
 
     if request.method == "POST" and not entry:
 
@@ -112,7 +159,6 @@ def room_detail(room_id):
         genre = request.form.get("genre")
         prefer_with = request.form.get("prefer_with")
         avoid_with = request.form.get("avoid_with")
-        start_location = request.form.get("start_location")
 
         new_entry = Entry(
             user_id=current_user.id,
@@ -123,7 +169,6 @@ def room_detail(room_id):
             genre=genre,
             prefer_with=prefer_with,
             avoid_with=avoid_with,
-            start_location=start_location
         )
 
         db.session.add(new_entry)

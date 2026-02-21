@@ -30,12 +30,15 @@
     <hr>
 
     <h5>出演順</h5>
-    <select name="schedule_id" required>
+    <select name="schedule_id" class="form-select">
         <option value="">選択してください</option>
         {% for s in schedules %}
-            <option value="{{ s.id }}">{{ s.label }}</option>
+            <option value="{{ s.id }}">
+                {{ s.section }}部 {{ s.order }}番
+            </option>
         {% endfor %}
     </select>
+
 
     <hr>
 

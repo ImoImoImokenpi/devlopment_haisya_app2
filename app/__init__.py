@@ -11,7 +11,7 @@ def create_app():
     migrate.init_app(app, db)
 
         # モデルを認識させる
-    from .models import user, room
+    from .models import User, Room, Entry, EventSchedule
 
     # blueprint 登録
     from .auth.routes import auth_bp

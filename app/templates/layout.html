@@ -141,7 +141,7 @@
                 <a href="/logout" class="nav-link-custom">ログアウト</a>
             {% else %}
                 <a href="/login" class="nav-link-custom">ログイン</a>
-                <a href="/register" class="btn btn-walica ms-3 py-1 px-3" style="font-size:0.85rem;">新規登録</a>
+                <a href="/register" class="btn btn-walica-reverce ms-3 py-1 px-3" style="font-size:0.85rem;">新規登録</a>
             {% endif %}
         </div>
     </div>
@@ -149,7 +149,7 @@
 
 <div class="main-container">
     {% if current_user.is_authenticated %}
-    <div class="d-flex justify-content-center mb-4 d-sm-none">
+    <div class="d-flex justify-content-center mb-4">
         <a href="/rooms" class="btn btn-sm btn-outline-secondary rounded-pill me-2"> ルーム一覧 </a>
         <a href="/rooms/create" class="btn btn-sm btn-walica rounded-pill"> + 作成 </a>
     </div>

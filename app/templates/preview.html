@@ -7,6 +7,10 @@
     <div class="card mt-3">
         <div class="card-body">
             <h4>{{ room.name }}</h4>
+            {% if room.attachment %}
+            <p>添付ファイル: <a href="{{ url_for('static', filename='uploads/' + room.attachment) }}" target="_blank">{{ room.attachment }}</a></p>
+            {% endif %}
+
             <p>ここに将来、配車結果が表示されます</p>
         </div>
     </div>

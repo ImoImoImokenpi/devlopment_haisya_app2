@@ -1,50 +1,124 @@
 {% extends "layout.html" %}
 {% block content %}
 
-<h2>イベントルーム作成</h2>
+<div class="container mt-4" style="max-width: 800px;">
+    <h2 class="mb-4">ルーム作成</h2>
 
-<form method="POST">
+    <form method="POST" enctype="multipart/form-data">
 
-    <h4>基本情報</h4>
+        <!-- 基本情報 -->
+        <div class="card mb-4">
+            <div class="card-header">
+                基本情報
+            </div>
+            <div class="card-body">
 
-    ルーム名<br>
-    <input name="name" required class="form-control"><br>
+                <div class="mb-3">
+                    <label class="form-label">イベント名</label>
+                    <input type="text" name="name" class="form-control" required>
+                </div>
 
-    説明<br>
-    <textarea name="description" class="form-control"></textarea><br>
+                <div class="mb-3">
+                    <label class="form-label">説明</label>
+                    <textarea name="description" class="form-control" rows="3"></textarea>
+                </div>
 
-    開催日<br>
-    <input type="date" name="event_date" required class="form-control"><br>
+                <div class="row">
+                    <div class="col">
+                        <label class="form-label">開催日</label>
+                        <input type="date" name="event_date" class="form-control" required>
+                    </div>
 
-    締切時刻<br>
-    <input type="datetime-local" name="deadline" required class="form-control"><br>
+                    <div class="col">
+                        <label class="form-label">募集締切</label>
+                        <input type="datetime-local" name="deadline" class="form-control" required>
+                    </div>
+                </div>
 
-    <hr>
+            </div>
+        </div>
 
-    <h4>出演順（いくつでも追加可）</h4>
 
-    <div id="schedule-area">
-        <input name="schedule_label[]" class="form-control mb-2" placeholder="例：1番目">
-    </div>
+        <!-- 出番設定 -->
+        <div class="card mb-4">
+            <div class="card-header">
+                出番設定
+            </div>
+            <div class="card-body">
 
-    <button type="button" class="btn btn-secondary" onclick="addSchedule()">
-        出番を追加
-    </button>
+                <label class="form-label">
+                    部数（選択するだけで出番順が自動生成されます）
+                </label>
 
-    <hr>
+                <select name="sections" class="form-select">
+                    <option value="1">1部</option>
+                    <option value="2">2部</option>
+                    <option value="3">3部</option>
+                    <option value="4">4部</option>
+                    <option value="5">5部</option>
+                </select>
 
-    <button class="btn btn-success">作成</button>
-</form>
+                <small class="text-muted">
+                    ※参加者には「部数 × 15枠」の出番が自動割り当てされます
+                </small>
 
-<script>
-function addSchedule(){
-    const area = document.getElementById("schedule-area");
-    const input = document.createElement("input");
-    input.name = "schedule_label[]";
-    input.className = "form-control mb-2";
-    input.placeholder = "例：2番目";
-    area.appendChild(input);
-}
-</script>
+            </div>
+        </div>
+
+
+        <!-- 質問設定 -->
+        <div class="card mb-4">
+            <div class="card-header">
+                参加者への質問（必要なものだけチェック）
+            </div>
+            <div class="card-body">
+
+                {% for q in questions %}
+                <div class="form-check mb-2">
+                    <input class="form-check-input"
+                           type="checkbox"
+                           name="questions"
+                           value="{{ q.id }}"
+                           id="q{{ q.id }}">
+
+                    <label class="form-check-label" for="q{{ q.id }}">
+                        {{ q.question_text }}
+                    </label>
+                </div>
+                {% endfor %}
+
+                <small class="text-muted">
+                    例：車の有無・乗車人数・出番希望・ジャンル・避けたい人・リハ参加など
+                </small>
+
+            </div>
+        </div>
+
+
+        <!-- 添付ファイル -->
+        <div class="card mb-4">
+            <div class="card-header">
+                資料の添付（タイムテーブル・注意事項など）
+            </div>
+            <div class="card-body">
+
+                <input type="file" name="attachment" class="form-control">
+
+                <small class="text-muted">
+                    PDF / 画像 / Excel などをアップロードできます
+                </small>
+
+            </div>
+        </div>
+
+
+        <div class="d-grid">
+            <button type="submit" class="btn btn-walica btn-lg">
+                ルームを作成
+            </button>
+        </div>
+
+    </form>
+</div>
 
 {% endblock %}
