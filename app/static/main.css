@@ -30,3 +30,12 @@
     background:white;
     border-top:none;
 }
+
+.badge-walica {
+    background-color: var(--walica-green) !important;
+    color: white !important;
+}
+.badge-muted {
+    background-color: #e9ecef !important;
+    color: #6c757d !important;
+}

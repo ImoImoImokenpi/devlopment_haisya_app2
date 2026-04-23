@@ -15,10 +15,12 @@ def create_app():
 
     # blueprint 登録
     from .auth.routes import auth_bp
+    from .events.routes import events_bp
     from .rooms.routes import rooms_bp
     from .matching.routes import matching_bp
 
     app.register_blueprint(auth_bp)
+    app.register_blueprint(events_bp)
     app.register_blueprint(rooms_bp)
     app.register_blueprint(matching_bp)
 

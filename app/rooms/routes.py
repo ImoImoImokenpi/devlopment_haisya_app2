@@ -35,9 +35,48 @@ def rooms():
         registered_room_ids=registered_room_ids
     )
 
-@rooms_bp.route("/create", methods=["GET", "POST"])
+@rooms_bp.route('/create', methods=['GET', 'POST'])
 @login_required
 def create_room():
+    if request.method == 'GET':
+        # クエリパラメータから日付を取得 (なければ今日)
+        date_str = request.args.get('date')
+        if not date_str:
+            date_str = datetime.now().strftime('%Y-%m-%d')
+        
+        default_start = f"{date_str}T10:00"
+        default_end = f"{date_str}T11:00"
+        
+        return render_template('create_room.html', default_start=default_start, default_end=default_end)
+
+    if request.method == 'POST':
+        # フォームデータの保存処理
+        title = request.form.get('title')
+        location = request.form.get('location')
+        start_str = request.form.get('start_time')
+        end_str = request.form.get('end_time')
+        
+        # チェックボックスはチェックされている時だけ 'on' という文字列が飛ぶ
+        needs_car = True if request.form.get('needs_car') == 'on' else False
+        # 文字列をPythonのdatetime型に変換
+        start_time = datetime.strptime(start_str, '%Y-%m-%dT%H:%M')
+        end_time = datetime.strptime(end_str, '%Y-%m-%dT%H:%M') if end_str else None
+
+        # インスタンス作成
+        new_event = Event(
+            title=title,
+            location=location,
+            start_time=start_time,
+            end_time=end_time,
+            needs_car=needs_car,
+            created_by=current_user.id
+            # group_id は現在選択中のルームIDがあればセット
+        )
+
+        db.session.add(new_event)
+        db.session.commit()
+
+        return redirect(url_for('events.event_detail', event_id=new_event.id))
     if request.method == "POST":
 
         name = request.form.get("name")

@@ -1,0 +1,77 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="d-flex align-items-center mb-4">
+    <h5 class="fw-bold mb-0">イベントの新規作成</h5>
+</div>
+
+<form action="/events/create" method="POST">
+    <div class="mb-4">
+        <label class="form-label small fw-bold text-muted">基本情報</label>
+        <div class="main-card shadow-none border" style="padding: 20px;">
+            <div class="mb-3">
+                <input type="text" name="title" class="form-control form-control-lg border-0 ps-0" 
+                       placeholder="イベント名" style="box-shadow: none; font-weight: 700;">
+                <hr class="mt-1 mb-3">
+            </div>
+
+            <div class="mb-3">
+                <label class="small text-muted mb-1">開催場所</label>
+                <div class="input-group bg-light rounded-pill px-3">
+                    <span class="input-group-text bg-transparent border-0 text-muted"><i class="bi bi-geo-alt"></i></span>
+                    <input type="text" name="location" class="form-control bg-transparent border-0 py-2" placeholder="場所を入力">
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-6">
+                    <label class="small text-muted mb-1">開始日時</label>
+                    <input type="datetime-local" name="start_time" 
+                        class="form-control rounded-pill border-light bg-light py-2"
+                        value="{{ default_start }}"> 
+                </div>
+                <div class="col-6">
+                    <label class="small text-muted mb-1">終了日時</label>
+                    <input type="datetime-local" name="end_time"
+                        class="form-control rounded-pill border-light bg-light py-2"
+                        value="{{ default_end }}"> </div>
+            </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="mb-4">
+        <label class="form-label small fw-bold text-muted">配車設定</label>
+        <div class="main-card shadow-none border" style="padding: 20px;">
+            <div class="d-flex align-items-center justify-content-between mb-3">
+                <div>
+                    <p class="mb-0 fw-bold">🚗 配車を募集する</p>
+                    <small class="text-muted">参加者の車割りを自動計算します</small>
+                </div>
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" name="needs_car" id="needs_car" checked style="width: 2.5em; height: 1.25em;">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="d-grid gap-2 mb-5">
+        <button type="submit" class="btn btn-walica-reverce py-3 shadow-sm">
+            イベントを作成する
+        </button>
+    </div>
+</form>
+
+<script>
+    // IDを needs_car に修正
+    const carSwitch = document.getElementById('needs_car');
+    if (carSwitch) {
+        carSwitch.addEventListener('change', function() {
+            const settings = document.getElementById('carSettings');
+            if (settings) {
+                settings.style.display = this.checked ? 'block' : 'none';
+            }
+        });
+    }
+</script>
+{% endblock %}

@@ -2,14 +2,133 @@
 
 {% block content %}
 
-<h2>トップページ</h2>
+<style>
+    /* FullCalendarのカスタム：デザイン統一 */
+    :root {
+        --fc-border-color: #f1f3f5;
+        --fc-daygrid-dot-event-marker-size: 8px;
+        --fc-today-bg-color: rgba(32, 201, 151, 0.05);
+    }
 
-<p>
-このアプリはイベント時の相乗り・送迎を自動で決定する配車システムです。
-</p>
+    #calendar {
+        background: white;
+        font-size: 0.9rem;
+    }
 
-<p>
-まずはユーザ登録をしてください。
-</p>
+    /* カレンダーの枠線を消してスッキリさせる */
+    .fc { border: none !important; }
+    .fc-theme-standard td, .fc-theme-standard th { border: 1px solid var(--fc-border-color); }
+    
+    /* ツールバーのボタンをbtn-walica風に */
+    .fc .fc-button-primary {
+        background-color: white !important;
+        border: 1px solid #dee2e6 !important;
+        color: #666 !important;
+        text-transform: capitalize;
+        font-weight: 500;
+        border-radius: 8px !important;
+    }
+    .fc .fc-button-primary:hover {
+        background-color: var(--bg-color) !important;
+        color: var(--walica-green) !important;
+    }
+    .fc .fc-button-active {
+        background-color: var(--walica-green) !important;
+        border-color: var(--walica-green) !important;
+        color: white !important;
+    }
+    
+    .fc-toolbar-title {
+        font-size: 1.1rem !important;
+        font-weight: 700;
+        color: var(--text-dark);
+    }
+
+    /* 日付の数字を小さく、余白をタイトに */
+    .fc .fc-daygrid-day-top {
+        flex-direction: row;
+        justify-content: center;
+        font-size: 0.8rem;
+    }
+
+    /* イベントの枠をよりシンプルに */
+    .fc-daygrid-event {
+        margin-top: 2px !important;
+        padding: 1px 4px !important;
+        border-radius: 4px !important;
+        font-size: 0.75rem !important;
+    }
+
+    /* ツールバーをさらにコンパクトに */
+    .fc-toolbar {
+        margin-bottom: 1rem !important;
+    }
+
+    /* 配車が必要な予定のドットを強調 */
+    .event-needs-car::before {
+        content: "🚗";
+        margin-right: 4px;
+        font-size: 0.8rem;
+    }
+</style>
+
+<div class="text-center mb-4">
+    <h5 class="fw-bold">マイカレンダー</h5>
+    <p class="text-muted small">日付をタップして確認・作成</p>
+</div>
+
+<div id="calendar" class="mb-4"></div>
+
+<div class="d-grid gap-2">
+    <button class="btn btn-walica-reverce py-3">
+        <i class="bi bi-plus-lg"></i> 新しい予定を追加
+    </button>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const calendarEl = document.getElementById('calendar');
+        const calendar = new FullCalendar.Calendar(calendarEl, {
+            initialView: 'dayGridMonth',
+            locale: 'ja',
+            height: 'auto',
+            headerToolbar: {
+                left: 'prev,next',
+                center: 'title',
+                right: 'today'
+            },
+
+            // --- コンパクト化設定 ---
+            displayEventTime: false,  // ★イベントの時間を非表示にする
+
+            events: '/events/api/events',
+
+            // 日付をクリックした時の処理
+            dateClick: function(info) {
+                const selectedDate = info.dateStr;
+                window.location.href = `/events/create?date=${selectedDate}`;
+            },
+            // 2. ★ここに追加！登録済みのイベントをクリックした時の処理（詳細へ）
+            eventClick: function(info) {
+                // info.event.id は API側でセットした Event.id になります
+                const eventId = info.event.id;
+                if (eventId) {
+                    window.location.href = `/events/detail/${eventId}`;
+                }
+            }
+        });
+        calendar.render();
+
+        // 予定追加ボタンの処理（カレンダーの外に書く）
+        const addBtn = document.querySelector('.btn-walica-reverce');
+        if (addBtn) {
+            addBtn.addEventListener('click', function() {
+                const today = new Date().toISOString().split('T')[0];
+                window.location.href = `/events/create?date=${today}`;
+            });
+        }
+    });
+</script>
 
 {% endblock %}

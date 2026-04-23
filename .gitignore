@@ -1,2 +1,28 @@
+# --- Pythonキャッシュ ---
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# --- 仮想環境 ---
+venv/
+.venv/
+env/
+
+# --- Flask/SQLite データベース ---
+instance/
+*.db
+*.sqlite
+
+# --- 環境変数・機密情報 ---
 .env
-.env.*
+.flaskenv
+
+# --- OS・エディタ関連 ---
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# --- ログ ---
+*.log
