@@ -1,0 +1,98 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="d-flex align-items-center mb-4">
+    <a href="{{ url_for('events.event_detail', event_id=event.id) }}" class="text-decoration-none text-muted me-3">
+        <i class="bi bi-chevron-left"></i>
+    </a>
+    <h5 class="fw-bold mb-0">配車ルームの作成</h5>
+</div>
+
+<div class="main-card border-0 shadow-sm mb-4 bg-light">
+    <div class="small text-muted">イベント</div>
+    <div class="fw-bold text-dark">{{ event.title }}</div>
+</div>
+
+<form action="{{ url_for('rooms.create_room', event_id=event.id) }}" method="POST">
+    
+    <div class="mb-4">
+        <label class="form-label small fw-bold text-muted">基本設定</label>
+        <div class="main-card shadow-none border p-3">
+            <div class="mb-3">
+                <label class="small text-muted mb-1">ルーム名</label>
+                <input type="text" name="car_name" class="form-control border-0 bg-light py-2" 
+                    placeholder="例: ルーム{{ next_room_num }}" 
+                    value="ルーム{{ next_room_num }}"> 
+            </div>
+            <div class="mb-3">
+                <label class="small text-muted mb-1">募集締切日時</label>
+                <input type="datetime-local" name="deadline" class="form-control border-0 bg-light py-2" required>
+            </div>
+
+            <div class="mb-3">
+                <label class="small text-muted mb-1">部数（選択するだけで出番順が自動生成されます）</label>
+                <select name="sections" class="form-select">
+                    <option value="1">1部</option>
+                    <option value="2">2部</option>
+                    <option value="3">3部</option>
+                    <option value="4">4部</option>
+                    <option value="5">5部</option>
+                </select>
+
+                <small class="text-muted">
+                    ※参加者には「部数 × 15枠」の出番が自動割り当てされます
+                </small>
+        
+            </div>
+        </div>
+    </div>
+
+    <div class="mb-4">
+        <label class="form-label small fw-bold text-muted">参加者への質問設定</label>
+        <div class="main-card shadow-none border p-3">
+            <p class="small text-muted mb-3">参加者に回答を求める項目にチェックしてください：</p>
+            
+            <div class="d-flex flex-column gap-2">
+                {% set items = [
+                    ('q_genre', 'パフォーマンスジャンル'),
+                    ('q_car', '自分の車の有無'),
+                    ('q_avoid', '一緒に乗りたくない人の名前（配慮用）')
+                ] %}
+
+                {% for id, label in items %}
+                <div class="form-check custom-card-check p-0">
+                    <input class="btn-check" type="checkbox" name="selected_questions" 
+                           value="{{ id }}" id="{{ id }}">
+                    <label class="btn btn-outline-light text-dark w-100 text-start py-2 px-3 border rounded-3 d-flex align-items-center" 
+                           for="{{ id }}">
+                        <i class="bi bi-plus-circle me-2 text-muted"></i>
+                        {{ label }}
+                    </label>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <div class="d-grid gap-2 mb-5">
+        <button type="submit" class="btn btn-walica py-3 shadow-sm fw-bold">
+            ルームを作成する
+        </button>
+        <a href="{{ url_for('events.event_detail', event_id=event.id) }}" 
+           class="btn btn-link text-muted text-decoration-none small">キャンセル</a>
+    </div>
+</form>
+
+<style>
+/* チェックボックスを選択した時に色が変わるスタイル */
+.btn-check:checked + .btn-outline-light {
+    background-color: rgba(32, 201, 151, 0.1) !important;
+    border-color: var(--walica-green) !important;
+    color: var(--walica-green) !important;
+}
+.btn-check:checked + .btn-outline-light i::before {
+    content: "\f26a"; /* チェックアイコンに変更 */
+    color: var(--walica-green);
+}
+</style>
+{% endblock %}

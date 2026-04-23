@@ -34,12 +34,43 @@
 </div>
 
 {% if event.needs_car %}
-<div class="d-grid gap-2">
-    <a href="{{ url_for('rooms.create', room_id=room.id) }}" class="btn btn-walica py-2">
-        ルームを作成する
-    </a>
-    <button class="btn btn-outline-secondary btn-sm rounded-pill border-light">相乗りを希望する</button>
-</div>
+    {% if event.rooms %}
+        {% for room in event.rooms %}
+        <div class="main-card border-0 shadow-sm mb-3 p-3">
+            <div class="d-flex justify-content-between align-items-center">
+                <div class="flex-grow-1">
+                    <div class="fw-bold mb-1" style="font-size: 1rem;">{{ room.name }}</div>
+                    <div class="text-muted" style="font-size: 0.75rem;">
+                        <i class="bi bi-clock"></i> 締切: {{ room.deadline.strftime('%m/%d %H:%M') if room.deadline else '設定なし' }}
+                    </div>
+                    {% if room.description %}
+                    <div class="text-muted mt-2 small" style="font-size: 0.75rem;">
+                        <i class="bi bi-info-circle"></i> {{ room.description }}
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="ms-3">
+                    <a href="{{ url_for('rooms.entry_room', room_id=room.id) }}" class="btn btn-walica btn-sm rounded-pill px-3 shadow-sm">
+                        参加
+                    </a>
+                </div>
+            </div>
+            
+        </div>
+        {% endfor %}
+        <div class="text-center">
+            <a href="{{ url_for('rooms.create_room', event_id=event.id) }}" class="btn btn-walica btn-sm rounded-pill px-4">
+                ルームを追加
+            </a>
+        </div>
+    {% else %}
+        <div class="text-center py-4 border rounded-4 border-dashed bg-light">
+            <p class="text-muted small mb-3">まだ配車ルームが作成されていません</p>
+            <a href="{{ url_for('rooms.create_room', event_id=event.id) }}" class="btn btn-walica btn-sm rounded-pill px-4">
+                ルームを作る
+            </a>
+        </div>
+    {% endif %}
 {% endif %}
 
 <div class="text-center mt-4">

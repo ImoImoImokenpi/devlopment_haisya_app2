@@ -1,0 +1,137 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="d-flex align-items-center mb-4">
+    <a href="{{ url_for('events.event_detail', event_id=event.id) }}" class="text-decoration-none text-muted me-3">
+        <i class="bi bi-chevron-left"></i>
+    </a>
+    <h5 class="fw-bold mb-0">ルームに参加</h5>
+</div>
+
+<div class="main-card border-0 shadow-sm mb-4">
+    <div class="small text-muted">参加中のルーム</div>
+    <h4 class="fw-bold text-dark mb-1">{{ room.name }}</h4>
+    <p class="text-muted small mb-0">{{ room.description or "配車への参加登録を行います。" }}</p>
+    <hr class="my-3" style="opacity: 0.1;">
+    <div class="d-flex justify-content-between align-items-center">
+        <span class="small text-muted">現在の登録人数</span>
+        <span class="fw-bold text-walica">{{ room.participant_count }} 人</span>
+    </div>
+</div>
+
+{% if not entry %}
+<form action="{{ url_for('rooms.entry_room', room_id=room.id) }}" method="POST">
+    
+    <div class="mb-4">
+        <label class="form-label small fw-bold text-muted">出演順の選択</label>
+        <div class="main-card shadow-none border p-3 bg-white">
+            <select name="schedule_id" class="form-select border-0 bg-light py-2" required>
+                <option value="" disabled selected>選択してください</option>
+                {% for s in schedules %}
+                    <option value="{{ s.id }}">
+                        {{ s.section }}部 {{ s.order }}番
+                    </option>
+                {% endfor %}
+            </select>
+            <small class="text-muted mt-2 d-block" style="font-size: 0.7rem;">
+                ※自分の出番を選択してください。配車のマッチングに使用されます。
+            </small>
+        </div>
+    </div>
+
+    {% if 'q_car' in selected_ids %}
+    <div class="mb-4">
+        <label class="form-label small fw-bold text-muted">車の出し入れ</label>
+        <div class="main-card shadow-none border p-3 bg-white">
+            <div class="form-check mb-3">
+                <input class="form-check-input" type="checkbox" name="has_car" id="hasCarCheck" value="yes">
+                <label class="form-check-label fw-bold" for="hasCarCheck">
+                    車を出せる（ドライバー）
+                </label>
+            </div>
+            <div id="capacityInput" class="ps-4 d-none">
+                <label class="small text-muted mb-1">乗車可能人数（自分を除く）</label>
+                <div class="d-flex align-items-center gap-2">
+                    <input type="number" name="capacity" class="form-control border-0 bg-light w-50" min="1" max="10" value="3">
+                    <span class="small text-muted">人</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if 'q_genre' in selected_ids %}
+    <div class="mb-4">
+        <label class="form-label small fw-bold text-muted">ジャンル</label>
+        <div class="main-card shadow-none border p-3 bg-white">
+            <input type="text" name="answer_genre" class="form-control border-0 bg-light" placeholder="例：バンド、ダンス">
+        </div>
+    </div>
+    {% endif %}
+
+    {% if 'q_avoid' in selected_ids %}
+    <div class="mb-4">
+        <label class="form-label small fw-bold text-muted">同乗に関する希望（任意）</label>
+        <div class="main-card shadow-none border p-3 bg-white">
+            <div class="mb-3">
+                <label class="small text-muted mb-1">一緒に乗りたい人</label>
+                <input type="text" name="prefer_with" class="form-control border-0 bg-light" placeholder="名前を記入">
+            </div>
+            <div>
+                <label class="small text-muted mb-1">避けたい人（配慮が必要な場合）</label>
+                <input type="text" name="avoid_with" class="form-control border-0 bg-light" placeholder="名前を記入">
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="mb-4">
+        <label class="form-label small fw-bold text-muted">出発地点</label>
+        <div class="main-card shadow-none border p-3 bg-white">
+            <input type="text" name="start_location" class="form-control border-0 bg-light" placeholder="例：新宿駅、〇〇公園">
+        </div>
+    </div>
+
+    <div class="d-grid gap-2 mt-5 mb-5">
+        <button type="submit" class="btn btn-walica py-3 fw-bold shadow-sm">登録を完了する</button>
+        <a href="{{ url_for('events.event_detail', event_id=event.id) }}" class="btn btn-link text-muted text-decoration-none small">戻る</a>
+    </div>
+
+</form>
+
+{% else %}
+<div class="main-card border-0 shadow-sm p-4 text-center mb-4">
+    <div class="display-6 text-walica mb-3">
+        <i class="bi bi-check-circle-fill"></i>
+    </div>
+    <h5 class="fw-bold">登録済みです</h5>
+    <p class="text-muted small">このルームへの参加登録は完了しています。</p>
+    
+    <div class="d-grid gap-2 mt-4">
+        <a href="{{ url_for('events.event_detail', event_id=event.id) }}" class="btn btn-walica py-2">
+            詳細に戻る
+        </a>
+        <a href="#" class="btn btn-outline-secondary py-2 border-light small">
+            現在のマッチング状況を見る
+        </a>
+    </div>
+</div>
+{% endif %}
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const carCheck = document.getElementById('hasCarCheck');
+    const capacityDiv = document.getElementById('capacityInput');
+    
+    if (carCheck) {
+        carCheck.addEventListener('change', function() {
+            if (this.checked) {
+                capacityDiv.classList.remove('d-none');
+            } else {
+                capacityDiv.classList.add('d-none');
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

@@ -30,7 +30,7 @@ def login():
 
         if user and check_password_hash(user.password, password):
             login_user(user)
-            return redirect("/rooms")
+            return redirect("/")
 
     return render_template("login.html")
 

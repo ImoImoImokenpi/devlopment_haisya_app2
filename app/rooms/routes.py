@@ -7,6 +7,7 @@ from ..models.event_schedule import EventSchedule
 from ..models.room_attachment import RoomAttachment
 from ..models.question_master import QuestionMaster
 from ..models.room_question import RoomQuestion
+from ..models.event import Event
 from datetime import datetime
 from werkzeug.utils import secure_filename
 import os
@@ -20,208 +21,94 @@ def allowed_file(filename):
 
 rooms_bp = Blueprint("rooms", __name__, url_prefix="/rooms")
 
-@rooms_bp.route("/")
+@rooms_bp.route('/create/<int:event_id>', methods=['GET', 'POST'])
 @login_required
-def rooms():
-    # 参加募集されたルームが表示される
-    rooms = Room.query.all()
+def create_room(event_id):
+    # 紐づけるイベントが存在するか確認
+    event = Event.query.get_or_404(event_id)
 
-    my_entries = Entry.query.filter_by(user_id=current_user.id).all()
-    registered_room_ids = {e.room_id for e in my_entries}
-
-    return render_template(
-        "rooms.html",
-        rooms=rooms,
-        registered_room_ids=registered_room_ids
-    )
-
-@rooms_bp.route('/create', methods=['GET', 'POST'])
-@login_required
-def create_room():
-    if request.method == 'GET':
-        # クエリパラメータから日付を取得 (なければ今日)
-        date_str = request.args.get('date')
-        if not date_str:
-            date_str = datetime.now().strftime('%Y-%m-%d')
-        
-        default_start = f"{date_str}T10:00"
-        default_end = f"{date_str}T11:00"
-        
-        return render_template('create_room.html', default_start=default_start, default_end=default_end)
+    # 現在のこの予定に紐づくルーム数をカウント
+    current_room_count = Room.query.filter_by(event_id=event_id).count()
+    next_room_num = current_room_count + 1
 
     if request.method == 'POST':
-        # フォームデータの保存処理
-        title = request.form.get('title')
-        location = request.form.get('location')
-        start_str = request.form.get('start_time')
-        end_str = request.form.get('end_time')
-        
-        # チェックボックスはチェックされている時だけ 'on' という文字列が飛ぶ
-        needs_car = True if request.form.get('needs_car') == 'on' else False
-        # 文字列をPythonのdatetime型に変換
-        start_time = datetime.strptime(start_str, '%Y-%m-%dT%H:%M')
-        end_time = datetime.strptime(end_str, '%Y-%m-%dT%H:%M') if end_str else None
+        # 1. フォームデータの取得
+        deadline_str = request.form.get('deadline')
+        note = request.form.get('note')
+        selected_questions = request.form.getlist('selected_questions') # ['q_genre', 'q_car'...]
 
-        # インスタンス作成
-        new_event = Event(
-            title=title,
-            location=location,
-            start_time=start_time,
-            end_time=end_time,
-            needs_car=needs_car,
+        # 2. ルームの作成と保存
+        # ※ モデルの構成に合わせて調整してください
+        new_room = Room(
+            event_id=event.id,
+            name=request.form.get('car_name') or f"ルーム{next_room_num}", # デフォルト名
+            description=note,
+            deadline=datetime.strptime(deadline_str, '%Y-%m-%dT%H:%M') if deadline_str else None,
             created_by=current_user.id
-            # group_id は現在選択中のルームIDがあればセット
         )
+        
+        db.session.add(new_room)
+        db.session.flush() # IDを確定させるために一度流す
 
-        db.session.add(new_event)
-        db.session.commit()
-
-        return redirect(url_for('events.event_detail', event_id=new_event.id))
-    if request.method == "POST":
-
-        name = request.form.get("name")
-        description = request.form.get("description")
-        event_date_str = request.form.get("event_date")
-        deadline_str = request.form.get("deadline")
-        sections = int(request.form.get("sections", 1))
-
-        # Date (YYYY-MM-DD)
-        event_date = None
-        if event_date_str:
-            event_date = datetime.strptime(event_date_str, "%Y-%m-%d").date()
-
-        # DateTime (YYYY-MM-DDTHH:MM)
-        deadline = None
-        if deadline_str:
-            deadline = datetime.strptime(deadline_str, "%Y-%m-%dT%H:%M")
-
-
-        # ① Room作成
-        room = Room(
-            name=name,
-            description=description,
-            event_date=event_date,
-            deadline=deadline,
-            owner_id=current_user.id
-        )
-        db.session.add(room)
-        db.session.flush() 
-
-        PER_SECTION = 15  # 1部あたりの出番数
-
-        for section in range(1, sections + 1):
-            for order in range(1, PER_SECTION + 1):
-                schedule = EventSchedule(
-                    room_id=room.id,
-                    section=section,
-                    order=order
-                )
-                db.session.add(schedule)
-
-
-        # ③ 質問ON/OFF保存
-        selected_questions = request.form.getlist("questions")
-
-        for qid in selected_questions:
+        # 3. 選択された質問の紐付け
+        # selected_questions に入っている ID ('q_car' など) を RoomQuestion に登録
+        for q_id_str in selected_questions:
+            # 既存の QuestionMaster から ID を引くか、
+            # もし ID がそのまま数値なら int(q_id_str) で処理
             rq = RoomQuestion(
-                room_id=room.id,
-                question_id=int(qid)
+                room_id=new_room.id,
+                question_id=q_id_str # 文字列IDをそのまま保存するか、数値に変換するかはDB設計次第
             )
             db.session.add(rq)
 
-        # ④ 添付ファイル
-        file = request.files.get("attachment")
-        if file and file.filename:
-            filename = secure_filename(file.filename)
-            path = os.path.join("app/static/uploads", filename)
-            file.save(path)
-
-            attach = RoomAttachment(
-                room_id=room.id,
-                filename=filename,
-                filepath=path
-            )
-            db.session.add(attach)
-
         db.session.commit()
+        flash('配車ルームを作成しました！', 'success')
+        
+        return redirect(url_for('events.event_detail', event_id=event.id))
 
-        return redirect(url_for("rooms.rooms"))
+    # GET時の処理
+    return render_template('create_room.html', event=event, next_room_num=next_room_num)
 
-    # GET：質問一覧を取得
-    questions = QuestionMaster.query.all()
-    return render_template("create.html", questions=questions)
-
-@rooms_bp.route("/<int:room_id>/delete", methods=["POST"])
+@rooms_bp.route('/<int:room_id>', methods=['GET', 'POST'])
 @login_required
-def delete_room(room_id):
+def entry_room(room_id):
+    # 指定されたルームを取得
     room = Room.query.get_or_404(room_id)
+    # そのルームに紐づく質問設定を取得
+    room_questions = RoomQuestion.query.filter_by(room_id=room_id).all()
+    # 質問IDのリストを作成（テンプレートでの出し分け用）
+    selected_ids = [rq.question_id for rq in room_questions]
 
-    # 管理者以外は削除不可
-    if room.owner_id != current_user.id:
-        abort(403)
-
-    # 参加メンバーも消す
-    Entry.query.filter_by(room_id=room_id).delete()
-
-    db.session.delete(room)
-    db.session.commit()
-
-    flash("ルームを削除しました")
-    return redirect(url_for("rooms.rooms"))
-
-
-@rooms_bp.route("/<int:room_id>", methods=["GET", "POST"])
-@login_required
-def room_detail(room_id):
-
-    room = Room.query.get_or_404(room_id)
-
-    # このユーザが既に登録しているか確認
-    entry = Entry.query.filter_by(
-        room_id=room_id,
-        user_id=current_user.id
-    ).first()
-
-    # 出番一覧
-    schedules = (
-        EventSchedule.query
-        .filter_by(room_id=room_id)
-        .order_by(asc(EventSchedule.section), asc(EventSchedule.order))
-        .all()
-    )
-
-    if request.method == "POST" and not entry:
-
-        has_car = True if request.form.get("has_car") == "on" else False
-        capacity = int(request.form.get("capacity") or 0)
-        schedule_id = request.form.get("schedule_id")
-        genre = request.form.get("genre")
-        prefer_with = request.form.get("prefer_with")
-        avoid_with = request.form.get("avoid_with")
-
+    if request.method == 'POST':
+        # 1. フォームから回答を取得
+        # ※ get('name', default) を使って、未チェック項目のエラーを防ぐ
+        has_car_val = request.form.get('has_car') == 'yes'
+        
         new_entry = Entry(
+            room_id=room.id,
             user_id=current_user.id,
-            room_id=room_id,
-            has_car=has_car,
-            capacity=capacity,
-            schedule_id=schedule_id,
-            genre=genre,
-            prefer_with=prefer_with,
-            avoid_with=avoid_with,
+            # 回答内容を各カラムに保存（Entryモデルのカラム名に合わせて調整してください）
+            section=request.form.get('answer_section'),
+            genre=request.form.get('answer_genre'),
+            has_car=has_car_val,
+            capacity=request.form.get('capacity', type=int) if has_car_val else 0,
+            avoid_name=request.form.get('answer_avoid'),
+            entry_at=datetime.utcnow()
         )
 
-        db.session.add(new_entry)
-        db.session.commit()
+        try:
+            db.session.add(new_entry)
+            db.session.commit()
+            flash(f'{room.name} に参加しました！', 'success')
+        except Exception as e:
+            db.session.rollback()
+            flash('参加処理に失敗しました。', 'danger')
+            print(f"Error: {e}")
 
-        return redirect(url_for("matching.preview", room_id=room_id))
+        return redirect(url_for('events.event_detail', event_id=room.event_id))
 
-    # 登録人数
-    entry_count = Entry.query.filter_by(room_id=room_id).count()
-
-    return render_template(
-        "detail.html",
-        room=room,
-        entry=entry,
-        schedules=schedules,
-        entry_count=entry_count
-    )
+    # GET時：回答フォームを表示
+    return render_template('entry.html', 
+                           room=room, 
+                           event=room.event, 
+                           selected_ids=selected_ids)
