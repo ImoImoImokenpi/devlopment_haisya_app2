@@ -15,11 +15,9 @@
         font-size: 0.9rem;
     }
 
-    /* カレンダーの枠線を消してスッキリさせる */
     .fc { border: none !important; }
     .fc-theme-standard td, .fc-theme-standard th { border: 1px solid var(--fc-border-color); }
     
-    /* ツールバーのボタンをbtn-walica風に */
     .fc .fc-button-primary {
         background-color: white !important;
         border: 1px solid #dee2e6 !important;
@@ -44,14 +42,12 @@
         color: var(--text-dark);
     }
 
-    /* 日付の数字を小さく、余白をタイトに */
     .fc .fc-daygrid-day-top {
         flex-direction: row;
         justify-content: center;
         font-size: 0.8rem;
     }
 
-    /* イベントの枠をよりシンプルに */
     .fc-daygrid-event {
         margin-top: 2px !important;
         padding: 1px 4px !important;
@@ -59,30 +55,130 @@
         font-size: 0.75rem !important;
     }
 
-    /* ツールバーをさらにコンパクトに */
-    .fc-toolbar {
-        margin-bottom: 1rem !important;
-    }
+    .fc-toolbar { margin-bottom: 1rem !important; }
 
-    /* 配車が必要な予定のドットを強調 */
     .event-needs-car::before {
         content: "🚗";
         margin-right: 4px;
         font-size: 0.8rem;
     }
+
+    /* グループバッジのスタイル */
+    .group-tag {
+        font-size: 0.7rem;
+        padding: 2px 8px;
+        border-radius: 50px;
+        background: #e9ecef;
+        color: #6c757d;
+        display: inline-block;
+        margin-bottom: 4px;
+    }
+
+    /* グループバッジ（上部） */
+    .group-badge {
+        font-size: 0.75rem;
+        padding: 4px 12px;
+        border-radius: 50px;
+        background: white;
+        color: var(--text-dark);
+        border: 1px solid #dee2e6;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+    }
+
+    /* ルームカード（下部） */
+    .room-card {
+        background: white;
+        padding: 1rem;
+        border-radius: 16px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        border-left: 4px solid var(--walica-green);
+        transition: transform 0.2s;
+    }
+    .room-card:active { transform: scale(0.98); }
 </style>
+
+<div class="mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-2 px-1">
+        <h6 class="fw-bold mb-0" style="font-size: 0.9rem;">所属グループ</h6>
+        <span class="text-muted" style="font-size: 0.7rem;">全 {{ my_groups|length if my_groups else 0 }} 件</span>
+    </div>
+    <div class="d-flex gap-2 overflow-auto pb-2" style="white-space: nowrap; scrollbar-width: none;">
+        <div class="group-badge bg-light border-0 text-muted">個人</div>
+        {% if my_groups %}
+            {% for gm in my_groups %}
+            <div class="group-badge">
+                <i class="bi bi-people-fill text-walica"></i>
+                {{ gm.group.name }}
+            </div>
+            {% endfor %}
+        {% endif %}
+    </div>
+</div>
 
 <div class="text-center mb-4">
     <h5 class="fw-bold">マイカレンダー</h5>
-    <p class="text-muted small">日付をタップして確認・作成</p>
+    <div class="d-flex justify-content-center gap-1 flex-wrap">
+        <span class="group-tag">個人</span>
+        {% if my_groups %}
+            {% for gm in my_groups %}
+                <span class="group-tag"><i class="bi bi-people-fill me-1"></i>{{ gm.group.name }}</span>
+            {% endfor %}
+        {% endif %}
+    </div>
 </div>
 
-<div id="calendar" class="mb-4"></div>
+<div id="calendar" class="mb-4 shadow-sm rounded-4 p-2 bg-white"></div>
 
-<div class="d-grid gap-2">
-    <button class="btn btn-walica-reverce py-3">
-        <i class="bi bi-plus-lg"></i> 新しい予定を追加
-    </button>
+<div class="row g-2 mb-5">
+    <div class="col-8">
+        <button id="addEventBtn" class="btn btn-walica-reverce py-3 w-100 rounded-4 shadow-sm fw-bold">
+            <i class="bi bi-plus-lg"></i> 予定を追加
+        </button>
+    </div>
+    <div class="col-4">
+        <a href="{{ url_for('events.join_by_code') }}" class="btn btn-light py-3 w-100 rounded-4 shadow-sm border text-muted">
+            <i class="bi bi-hash"></i> 参加
+        </a>
+    </div>
+</div>
+
+<div class="mb-5">
+    <div class="px-1 mb-3">
+        <h6 class="fw-bold mb-0" style="font-size: 0.9rem;">参加中の配車ルーム</h6>
+    </div>
+
+    {% if joined_rooms %}
+        <div class="d-flex flex-column gap-3">
+            {% for room in joined_rooms %}
+            <a href="{{ url_for('rooms.entry_room', room_id=room.id) }}" class="text-decoration-none">
+                <div class="room-card d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="text-dark fw-bold mb-1" style="font-size: 1rem;">
+                            {{ room.name }}
+                        </div>
+                        <div class="text-muted d-flex align-items-center gap-2" style="font-size: 0.75rem;">
+                            <span><i class="bi bi-calendar-event"></i> {{ room.event.start_time.strftime('%m/%d') }}</span>
+                            <span><i class="bi bi-geo-alt"></i> {{ room.event.location }}</span>
+                        </div>
+                    </div>
+                    <div class="text-end">
+                        <span class="badge bg-success-subtle text-success rounded-pill px-3 py-2" style="font-size: 0.65rem;">
+                            参加中 <i class="bi bi-chevron-right ms-1"></i>
+                        </span>
+                    </div>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="text-center py-4 bg-light rounded-4 border border-dashed">
+            <i class="bi bi-car-front text-muted display-6 mb-2 d-block"></i>
+            <p class="text-muted small mb-0">予定されている配車はありません</p>
+        </div>
+    {% endif %}
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
@@ -98,36 +194,24 @@
                 center: 'title',
                 right: 'today'
             },
-
-            // --- コンパクト化設定 ---
-            displayEventTime: false,  // ★イベントの時間を非表示にする
-
+            displayEventTime: false,
             events: '/events/api/events',
 
-            // 日付をクリックした時の処理
             dateClick: function(info) {
-                const selectedDate = info.dateStr;
-                window.location.href = `/events/create?date=${selectedDate}`;
+                window.location.href = `/events/create?date=${info.dateStr}`;
             },
-            // 2. ★ここに追加！登録済みのイベントをクリックした時の処理（詳細へ）
             eventClick: function(info) {
-                // info.event.id は API側でセットした Event.id になります
-                const eventId = info.event.id;
-                if (eventId) {
-                    window.location.href = `/events/detail/${eventId}`;
+                if (info.event.id) {
+                    window.location.href = `/events/detail/${info.event.id}`;
                 }
             }
         });
         calendar.render();
 
-        // 予定追加ボタンの処理（カレンダーの外に書く）
-        const addBtn = document.querySelector('.btn-walica-reverce');
-        if (addBtn) {
-            addBtn.addEventListener('click', function() {
-                const today = new Date().toISOString().split('T')[0];
-                window.location.href = `/events/create?date=${today}`;
-            });
-        }
+        document.getElementById('addEventBtn').addEventListener('click', function() {
+            const today = new Date().toISOString().split('T')[0];
+            window.location.href = `/events/create?date=${today}`;
+        });
     });
 </script>
 

@@ -1,0 +1,88 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="d-flex align-items-center mb-4">
+    <a href="/" class="text-decoration-none text-muted me-3">
+        <i class="bi bi-chevron-left"></i>
+    </a>
+    <h5 class="fw-bold mb-0">参加・共有</h5>
+</div>
+
+<div class="container px-2">
+    <div class="text-center mb-5">
+        <div class="display-5 text-walica mb-3">
+            <i class="bi bi-hash"></i>
+        </div>
+        <h4 class="fw-bold">イベントへの参加・作成</h4>
+        <p class="text-muted small">
+            コードを入力して既存の予定に参加するか、<br>
+            新しいグループを立ち上げましょう。
+        </p>
+    </div>
+
+    <div class="main-card border-0 shadow-sm p-4 bg-white rounded-4 mx-auto" style="max-width: 400px;">
+        <div class="mb-4 text-center">
+            <label class="form-label small fw-bold text-success mb-2">
+                <i class="bi bi-door-open me-1"></i> 招待された方はこちら
+            </label>
+            <form action="{{ url_for('events.join_by_code') }}" method="POST">
+                <div class="mb-3">
+                    <input type="text" name="code" 
+                           id="joinCodeInput"
+                           class="form-control form-control-lg text-center fw-bold border-0 bg-light py-3" 
+                           placeholder="AB1234" 
+                           style="letter-spacing: 0.3rem; font-size: 1.8rem; text-transform: uppercase;"
+                           required autocomplete="off" autofocus>
+                </div>
+                <div class="d-grid">
+                    <button type="submit" class="btn btn-walica py-3 fw-bold rounded-pill shadow-sm">
+                        参加する
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <div class="hr-text text-muted my-4" style="font-size: 0.7rem; display: flex; align-items: center; text-align: center;">
+            <div style="flex: 1; height: 1px; background: #eee;"></div>
+            <span style="margin: 0 10px;">OR</span>
+            <div style="flex: 1; height: 1px; background: #eee;"></div>
+        </div>
+
+        <div class="text-center">
+            <label class="form-label small fw-bold text-muted mb-2">
+                <i class="bi bi-people me-1"></i> 新しく共有を始める方はこちら
+            </label>
+            <form action="{{ url_for('events.create_group') }}" method="GET">
+                <div class="d-grid">
+                    <button type="submit" class="btn btn-outline-secondary py-3 fw-bold rounded-pill shadow-sm">
+                        グループを作成する
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="mt-5 p-3 bg-light rounded-4 border border-white shadow-sm mx-auto" style="max-width: 400px;">
+        <h6 class="small fw-bold text-dark mb-2"><i class="bi bi-lightbulb me-1"></i> 招待コードとは？</h6>
+        <ul class="text-muted small mb-0 ps-3">
+            <li class="mb-1"><b>グループ</b>：サークルや部活など、メンバー全員で予定を自動共有。</li>
+            <li><b>単発イベント</b>：特定の1日だけの予定を確認・参加。</li>
+        </ul>
+    </div>
+</div>
+
+<script>
+    const input = document.getElementById('joinCodeInput');
+    input.addEventListener('input', function() {
+        this.value = this.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+    });
+</script>
+
+<style>
+    #joinCodeInput:focus {
+        background-color: #fff !important;
+        border-color: var(--walica-green) !important;
+        box-shadow: 0 0 0 0.25rem rgba(32, 201, 151, 0.1) !important;
+    }
+</style>
+{% endblock %}

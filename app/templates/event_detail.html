@@ -5,14 +5,14 @@
     <a href="/" class="text-decoration-none text-muted me-3">
         <i class="bi bi-chevron-left"></i>
     </a>
-    <h5 class="fw-bold mb-0">予定の詳細</h5>
+    <h5 class="fw-bold mb-0">スケジュール詳細</h5>
 </div>
 
 <div class="main-card border-0 shadow-sm mb-4">
     <div class="mb-3">
         <span class="badge rounded-pill px-3 py-2 mb-2 {% if event.needs_car %}badge-walica{% else %}badge-muted{% endif %}" 
             style="font-size: 0.75rem;">
-            {% if event.needs_car %}🚗 配車あり{% else %}移動のみ{% endif %}
+            {% if event.needs_car %}🚗 配車あり{% else %}配車なし{% endif %}
         </span>
         <h2 class="fw-bold h4 mb-1">{{ event.title }}</h2>
         <p class="text-muted mb-0"><i class="bi bi-geo-alt"></i> {{ event.location or "場所未指定" }}</p>
@@ -39,23 +39,38 @@
         <div class="main-card border-0 shadow-sm mb-3 p-3">
             <div class="d-flex justify-content-between align-items-center">
                 <div class="flex-grow-1">
-                    <div class="fw-bold mb-1" style="font-size: 1rem;">{{ room.name }}</div>
+                    <div class="d-flex align-items-center gap-2 mb-1">
+                        <div class="fw-bold" style="font-size: 1rem;">{{ room.name }}</div>
+                        {% if room.id in joined_room_ids %}
+                        <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill small" 
+                              style="font-size: 0.65rem;">
+                            <i class="bi bi-check2"></i> 参加中
+                        </span>
+                        {% endif %}
+                    </div>
+                    
                     <div class="text-muted" style="font-size: 0.75rem;">
                         <i class="bi bi-clock"></i> 締切: {{ room.deadline.strftime('%m/%d %H:%M') if room.deadline else '設定なし' }}
                     </div>
+                    
                     {% if room.description %}
                     <div class="text-muted mt-2 small" style="font-size: 0.75rem;">
                         <i class="bi bi-info-circle"></i> {{ room.description }}
                     </div>
                     {% endif %}
                 </div>
+
                 <div class="ms-3">
-                    <a href="{{ url_for('rooms.entry_room', room_id=room.id) }}" class="btn btn-walica btn-sm rounded-pill px-3 shadow-sm">
-                        参加
+                    <a href="{{ url_for('rooms.entry_room', room_id=room.id) }}" 
+                       class="btn {% if room.id in joined_room_ids %}btn-outline-secondary{% else %}btn-walica{% endif %} btn-sm rounded-pill px-3 shadow-sm">
+                        {% if room.id in joined_room_ids %}
+                            確認
+                        {% else %}
+                            参加
+                        {% endif %}
                     </a>
                 </div>
             </div>
-            
         </div>
         {% endfor %}
         <div class="text-center">
@@ -73,7 +88,29 @@
     {% endif %}
 {% endif %}
 
+<div id="copyToast" class="fixed-bottom mb-5 pb-5 d-flex justify-content-center d-none">
+    <div class="bg-dark text-white px-4 py-2 rounded-pill small shadow animate__animated animate__fadeInUp">
+        コードをコピーしました！
+    </div>
+</div>
+
 <div class="text-center mt-4">
     <a href="/" class="text-muted small text-decoration-none">カレンダーに戻る</a>
 </div>
+
+<script>
+function copyJoinCode(code) {
+    navigator.clipboard.writeText(code).then(() => {
+        const toast = document.getElementById('copyToast');
+        toast.classList.remove('d-none');
+        setTimeout(() => {
+            toast.classList.add('d-none');
+        }, 2000);
+    });
+}
+</script>
+
+<style>
+.border-dashed { border-style: dashed !important; }
+</style>
 {% endblock %}

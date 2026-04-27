@@ -9,4 +9,3 @@ class QuestionMaster(db.Model):
     title = db.Column(db.String(200))
     type = db.Column(db.String(20))  
     # text / number / bool / single / multi / user_select
-
