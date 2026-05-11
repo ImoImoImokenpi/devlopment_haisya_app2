@@ -47,20 +47,24 @@ def get_events_json():
 def join_by_code():
     if request.method == 'POST':
         code = request.form.get('code').upper().strip()
-        
         # まずはグループ招待コードを検索
         group = Group.query.filter_by(invite_code=code).first()
+
         if group:
             # 既にメンバーか確認
             is_member = GroupMember.query.filter_by(group_id=group.id, user_id=current_user.id).first()
             if not is_member:
-                new_member = GroupMember(group_id=group.id, user_id=current_user.id)
+                new_member = GroupMember(
+                    group_id=group.id, 
+                    user_id=current_user.id,
+                    role='member'
+                )
                 db.session.add(new_member)
                 db.session.commit()
                 flash(f'グループ「{group.name}」に参加しました！', 'success')
             else:
                 flash(f'既に「{group.name}」のメンバーです。', 'info')
-            return redirect(url_for('main.index')) # カレンダーへ
+            return redirect(url_for('index')) # カレンダーへ
 
         # 次に単発イベントの招待コードを検索
         event = Event.query.filter_by(join_code=code).first()
@@ -74,15 +78,146 @@ def join_by_code():
 @events_bp.route('/group', methods=['GET', 'POST'])
 @login_required
 def create_group():
-    if request.method == 'GET':  
-        return render_template('create_event.html')
-    if request.method == 'POST':        
-        return render_template('create_event.html')
+    if request.method == 'GET':
+        return render_template('create_group.html')
+    
+    if request.method == 'POST':
+        group_name = request.form.get('name')
+        
+        # 1. グループの作成
+        new_group = Group(
+            name=group_name,
+            invite_code=Group.generate_unique_code()
+        )
+        db.session.add(new_group)
+        db.session.flush() # IDを確定させる
+        
+        # 2. 作成者を最初のメンバー(管理者)として登録
+        member = GroupMember(
+            user_id=current_user.id, 
+            group_id=new_group.id,
+            role='admin'
+        )
+        db.session.add(member)
+        
+        db.session.commit()
+        
+        flash(f"グループ「{group_name}」を作成しました！", "success")
+        # 作成完了後、コードを表示するために詳細画面かメインへ
+        return render_template('create_group.html', group=new_group)
+
+@events_bp.route("/group/<int:group_id>")
+@login_required
+def group_detail(group_id):
+
+    # グループ取得
+    group = Group.query.get_or_404(group_id)
+
+    # 自分が所属しているか確認
+    membership = GroupMember.query.filter_by(
+        group_id=group.id,
+        user_id=current_user.id
+    ).first()
+
+    # 非メンバーは閲覧不可
+    if not membership:
+        flash("このグループを見る権限がありません。", "danger")
+        return redirect(url_for("index"))
+
+    # メンバー一覧取得
+    members = GroupMember.query.filter_by(
+        group_id=group.id
+    ).all()
+
+    # グループイベント取得
+    events = Event.query.filter_by(
+        group_id=group.id
+    ).order_by(Event.start_time.desc()).all()
+
+    # 管理者かどうか
+    is_admin = membership.role == "admin"
+
+    return render_template(
+        "group_detail.html",
+        group=group,
+        members=members,
+        events=events,
+        is_admin=is_admin
+    )
+
+
+@events_bp.route("/group/<int:group_id>/leave", methods=["POST"])
+@login_required
+def leave_group(group_id):
+
+    group = Group.query.get_or_404(group_id)
+
+    membership = GroupMember.query.filter_by(
+        group_id=group.id,
+        user_id=current_user.id
+    ).first()
+
+    if not membership:
+        flash("グループに所属していません。", "danger")
+        return redirect(url_for("index"))
+
+    # 管理者人数確認
+    if membership.role == "admin":
+
+        admin_count = GroupMember.query.filter_by(
+            group_id=group.id,
+            role="admin"
+        ).count()
+
+        # 最後の管理者なら脱退不可
+        if admin_count <= 1:
+
+            total_members = GroupMember.query.filter_by(
+                group_id=group.id
+            ).count()
+
+            # 自分しかいないならグループ削除
+            if total_members == 1:
+
+                db.session.delete(membership)
+                db.session.delete(group)
+
+                db.session.commit()
+
+                flash("グループを削除しました。", "success")
+
+                return redirect(url_for("index"))
+
+            flash(
+                "最後の管理者は脱退できません。管理者を引き継いでください。",
+                "warning"
+            )
+
+            return redirect(
+                url_for("events.group_detail", group_id=group.id)
+            )
+
+    # 通常脱退
+    db.session.delete(membership)
+    db.session.commit()
+
+    flash(f"「{group.name}」から脱退しました。", "success")
+
+    return redirect(url_for("index"))
+
 
 @events_bp.route('/create', methods=['GET', 'POST'])
 @login_required
 def create_event():
+
     if request.method == 'GET':
+        # 自分が「管理者」として所属しているグループだけを抽出
+        admin_memberships = GroupMember.query.filter_by(
+            user_id=current_user.id, 
+            role='admin'
+        ).all()
+        admin_groups = [gm.group for gm in admin_memberships]
+
         # クエリパラメータから日付を取得 (なければ今日)
         date_str = request.args.get('date')
         if not date_str:
@@ -91,14 +226,26 @@ def create_event():
         default_start = f"{date_str}T10:00"
         default_end = f"{date_str}T11:00"
         
-        return render_template('create_event.html', default_start=default_start, default_end=default_end)
-
+        return render_template('create_event.html', admin_groups=admin_groups, default_start=default_start, default_end=default_end)
+    
     if request.method == 'POST':
         # フォームデータの保存処理
+        group_id = request.form.get('group_id')
         title = request.form.get('title')
         location = request.form.get('location')
         start_str = request.form.get('start_time')
         end_str = request.form.get('end_time')
+
+        # セキュリティチェック（送られてきたgroup_idの管理者か？）
+        final_group_id = None
+        if group_id:
+            is_admin = GroupMember.query.filter_by(
+                group_id=group_id, 
+                user_id=current_user.id, 
+                role='admin'
+            ).first()
+            if is_admin:
+                final_group_id = group_id
         
         # チェックボックスはチェックされている時だけ 'on' という文字列が飛ぶ
         needs_car = True if request.form.get('needs_car') == 'on' else False
@@ -108,6 +255,7 @@ def create_event():
 
         # インスタンス作成
         new_event = Event(
+            group_id=final_group_id,
             title=title,
             location=location,
             start_time=start_time,
@@ -146,4 +294,4 @@ def join():
     if event:
         return redirect(url_for('events.event_detail', event_id=event.id))
     flash("コードが正しくありません")
-    return redirect(url_for('events.index'))
+    return redirect(url_for('index'))

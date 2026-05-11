@@ -1,0 +1,133 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="d-flex align-items-center mb-4">
+    <a href="{{ url_for('index' if group else 'events.join_by_code') }}" class="text-decoration-none text-muted me-3">
+        <i class="bi bi-chevron-left"></i>
+    </a>
+    <h5 class="fw-bold mb-0">グループ{% if group %}作成完了{% else %}作成{% endif %}</h5>
+</div>
+
+<div class="container px-2">
+
+    {% if group %}
+    <div class="text-center mb-5 animate__animated animate__fadeIn">
+        <div class="display-1 text-walica mb-4">
+            <i class="bi bi-check-circle-fill"></i>
+        </div>
+        <h4 class="fw-bold">「{{ group.name }}」を開設しました！</h4>
+        <p class="text-muted small">
+            メンバーに以下のコードを共有してください。<br>
+            このコードを入力すると、自動的に予定が同期されます。
+        </p>
+    </div>
+
+    <div class="main-card border-0 shadow-sm p-5 bg-white rounded-4 mx-auto text-center" style="max-width: 450px;">
+        <span class="text-muted small fw-bold d-block mb-2 text-uppercase" style="letter-spacing: 0.1rem;">招待コード</span>
+        
+        <div class="bg-light rounded-4 py-4 mb-4 border border-white">
+            <h1 class="fw-bold mb-0" id="inviteCode" style="letter-spacing: 0.5rem; color: var(--text-dark);">{{ group.invite_code }}</h1>
+        </div>
+
+        <div class="d-grid gap-3">
+            <button onclick="copyCode()" class="btn btn-walica py-3 fw-bold rounded-pill shadow-sm">
+                <i class="bi bi-clipboard-check me-2"></i>コードをコピー
+            </button>
+            
+            <a href="https://line.me/R/msg/text/?グループ「{{ group.name }}」を開設しました！%0a招待コードを入力してカレンダーを同期しよう！%0a%0a招待コード: {{ group.invite_code }}" 
+               class="btn btn-outline-success py-3 fw-bold rounded-pill border-2">
+                <i class="bi bi-line me-2"></i>LINEでメンバーに送る
+            </a>
+        </div>
+    </div>
+
+    <div class="text-center mt-4">
+        <a href="{{ url_for('index') }}" class="btn btn-link text-muted text-decoration-none">
+            戻る <i class="bi bi-arrow-right ms-1"></i>
+        </a>
+    </div>
+
+    <script>
+    function copyCode() {
+        const code = document.getElementById('inviteCode').innerText;
+        navigator.clipboard.writeText(code).then(() => {
+            alert("コードをコピーしました！メンバーに送ってください。");
+        });
+    }
+    </script>
+
+    {% else %}
+    <div class="text-center mb-5">
+        <div class="display-6 text-walica mb-3">
+            <i class="bi bi-people-fill"></i>
+        </div>
+        <h4 class="fw-bold">新しい共有を始める</h4>
+        <p class="text-muted small">
+            グループ名を入力してください。<br>
+            作成後、招待用のコードが発行されます。
+        </p>
+    </div>
+
+    <div class="main-card border-0 shadow-sm p-4 bg-white rounded-4 mx-auto" style="max-width: 450px;">
+        <form action="{{ url_for('events.create_group') }}" method="POST">
+            <div class="mb-4">
+                <label class="form-label small fw-bold text-muted px-1">グループ名</label>
+                <input type="text" name="name" 
+                       class="form-control form-control-lg border-0 bg-light py-3 rounded-4 px-3" 
+                       placeholder="例：〇〇大学 軽音部" 
+                       maxlength="50"
+                       required autofocus>
+                <div class="form-text mt-2 px-1" style="font-size: 0.7rem;">
+                    サークル名、旅行の名称、家族名など。
+                </div>
+            </div>
+
+            <div class="d-grid gap-3">
+                <button type="submit" class="btn btn-walica py-3 fw-bold rounded-pill shadow-sm">
+                    グループを開設する
+                </button>
+                <a href="{{ url_for('events.join_by_code') }}" class="btn btn-link btn-sm text-muted text-decoration-none">
+                    キャンセル
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <div class="row g-3 mt-4 mx-auto" style="max-width: 450px;">
+        <div class="col-6">
+            <div class="p-3 bg-white rounded-4 shadow-sm border-0 text-center h-100">
+                <i class="bi bi-shield-check text-walica d-block mb-1"></i>
+                <span class="fw-bold d-block" style="font-size: 0.75rem;">自動同期</span>
+                <span class="text-muted" style="font-size: 0.65rem;">全員の予定が一つに</span>
+            </div>
+        </div>
+        <div class="col-6">
+            <div class="p-3 bg-white rounded-4 shadow-sm border-0 text-center h-100">
+                <i class="bi bi-send text-walica d-block mb-1"></i>
+                <span class="fw-bold d-block" style="font-size: 0.75rem;">簡単招待</span>
+                <span class="text-muted" style="font-size: 0.65rem;">コードを送るだけ</span>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+</div>
+
+<style>
+    /* 入力フォームのフォーカス時スタイル */
+    .form-control:focus {
+        background-color: #fff !important;
+        border: 1px solid var(--walica-green) !important;
+        box-shadow: 0 0 0 0.25rem rgba(32, 201, 151, 0.1) !important;
+    }
+
+    /* 押し心地の調整 */
+    .btn-walica:active {
+        transform: translateY(1px);
+    }
+    
+    #inviteCode {
+        user-select: all;
+    }
+</style>
+{% endblock %}

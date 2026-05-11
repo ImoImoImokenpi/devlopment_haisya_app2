@@ -30,5 +30,7 @@ class Room(db.Model):
     # creator.rooms でユーザーが作った全ルームを取得可能に
     creator = db.relationship("User", backref=db.backref("rooms", lazy=True))
 
+    entries = db.relationship("Entry", backref="room", lazy=True)
+
     def __repr__(self):
         return f'<Room {self.name}>'

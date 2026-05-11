@@ -1,0 +1,93 @@
+{% extends "layout.html" %}
+
+{% block content %}
+
+<div class="d-flex align-items-center mb-4">
+    <a href="/" class="text-decoration-none text-muted me-3">
+        <i class="bi bi-chevron-left" style="font-size: 1.2rem;"></i>
+    </a>
+    <h5 class="fw-bold mb-0">プロフィール編集</h5>
+</div>
+
+<form action="{{ url_for('profile.edit') }}" method="POST" enctype="multipart/form-data">
+
+    {# ── アイコン ── #}
+    <div class="text-center mb-4">
+        <div class="position-relative d-inline-block">
+            <img id="iconPreview"
+                 src="{{ url_for('static', filename=current_user.icon or 'default.png') }}"
+                 alt="アイコン"
+                 class="rounded-circle shadow-sm"
+                 style="width: 88px; height: 88px; object-fit: cover;
+                        border: 3px solid var(--walica-green);">
+            <label for="iconInput"
+                   class="position-absolute bottom-0 end-0 rounded-circle d-flex align-items-center justify-content-center bg-white shadow-sm"
+                   style="width: 28px; height: 28px; cursor: pointer;
+                          border: 2px solid var(--walica-green);">
+                <i class="bi bi-camera-fill" style="font-size: 0.7rem; color: var(--walica-green);"></i>
+            </label>
+        </div>
+        <p class="text-muted mt-2 mb-0" style="font-size: 0.72rem;">タップして画像を変更</p>
+        <input type="file" id="iconInput" name="icon" accept="image/*" class="d-none">
+    </div>
+
+    {# ── 表示名 ── #}
+    <div class="mb-3">
+        <label class="form-label small fw-bold text-muted px-1">表示名</label>
+        <div class="bg-white rounded-4 p-3 shadow-sm">
+            <input type="text"
+                   name="display_name"
+                   class="form-control border-0 bg-light py-2 rounded-3"
+                   placeholder="例：田中太郎"
+                   value="{{ current_user.display_name or '' }}"
+                   maxlength="50">
+            <small class="text-muted mt-2 d-block" style="font-size: 0.7rem;">
+                <i class="bi bi-info-circle me-1"></i>
+                他のメンバーに表示される名前です。未設定の場合はユーザー名が使われます。
+            </small>
+        </div>
+    </div>
+
+    {# ── ユーザー名（変更不可） ── #}
+    <div class="mb-4">
+        <label class="form-label small fw-bold text-muted px-1">ユーザー名</label>
+        <div class="bg-white rounded-4 p-3 shadow-sm">
+            <div class="d-flex align-items-center gap-2 py-1">
+                <span class="text-muted small">@</span>
+                <span class="fw-bold text-dark small">{{ current_user.username }}</span>
+                <span class="ms-auto badge bg-light text-muted border rounded-pill"
+                      style="font-size: 0.65rem;">変更不可</span>
+            </div>
+        </div>
+    </div>
+
+    {# ── 保存ボタン ── #}
+    <div class="d-grid mt-4 mb-3">
+        <button type="submit" class="btn btn-walica-reverce py-3 fw-bold rounded-pill shadow-sm">
+            保存する
+        </button>
+    </div>
+
+</form>
+
+<style>
+.form-control:focus {
+    background-color: #fff !important;
+    border-color: var(--walica-green);
+    box-shadow: 0 0 0 0.2rem rgba(32, 201, 151, 0.15);
+}
+</style>
+
+<script>
+document.getElementById('iconInput').addEventListener('change', function () {
+    const file = this.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+        document.getElementById('iconPreview').src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+});
+</script>
+
+{% endblock %}

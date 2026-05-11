@@ -74,20 +74,32 @@
         margin-bottom: 4px;
     }
 
-    /* グループバッジ（上部） */
+    /* 既存のスタイルに追記 */
     .group-badge {
         font-size: 0.75rem;
-        padding: 4px 12px;
+        padding: 6px 14px; /* 少しゆとりを持たせる */
         border-radius: 50px;
         background: white;
         color: var(--text-dark);
         border: 1px solid #dee2e6;
         display: flex;
         align-items: center;
-        gap: 4px;
+        gap: 6px;
         box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+        flex-shrink: 0; /* 折り返し防止 */
     }
 
+    /* 管理者の場合のバッジ枠線（さりげなく緑に） */
+    .border-walica-light {
+        border-color: rgba(32, 201, 151, 0.3) !important;
+        background-color: rgba(32, 201, 151, 0.02);
+    }
+
+    /* 横スクロールを滑らかに */
+    .overflow-auto::-webkit-scrollbar {
+        display: none;
+    }
+    
     /* ルームカード（下部） */
     .room-card {
         background: white;
@@ -106,25 +118,32 @@
         <span class="text-muted" style="font-size: 0.7rem;">全 {{ my_groups|length if my_groups else 0 }} 件</span>
     </div>
     <div class="d-flex gap-2 overflow-auto pb-2" style="white-space: nowrap; scrollbar-width: none;">
-        <div class="group-badge bg-light border-0 text-muted">個人</div>
+        <div class="group-badge bg-light border-0 text-muted">
+            <i class="bi bi-person-fill"></i> 個人
+        </div>
+        
         {% if my_groups %}
             {% for gm in my_groups %}
-            <div class="group-badge">
-                <i class="bi bi-people-fill text-walica"></i>
-                {{ gm.group.name }}
-            </div>
-            {% endfor %}
-        {% endif %}
-    </div>
-</div>
 
-<div class="text-center mb-4">
-    <h5 class="fw-bold">マイカレンダー</h5>
-    <div class="d-flex justify-content-center gap-1 flex-wrap">
-        <span class="group-tag">個人</span>
-        {% if my_groups %}
-            {% for gm in my_groups %}
-                <span class="group-tag"><i class="bi bi-people-fill me-1"></i>{{ gm.group.name }}</span>
+            <a href="{{ url_for('events.group_detail', group_id=gm.group.id) }}"
+               class="text-decoration-none">
+
+                <div class="group-badge {% if gm.role == 'admin' %}border-walica-light{% endif %}">
+                    <i class="bi bi-people-fill {% if gm.role == 'admin' %}text-walica{% else %}text-secondary{% endif %}"></i>
+                    <span class="me-1">{{ gm.group.name }}</span>
+                    
+                    {% if gm.role == 'admin' %}
+                        <span class="badge bg-walica text-muted border rounded-pill" style="font-size: 0.55rem; padding: 2px 6px;">
+                            管理者
+                        </span>
+                    {% else %}
+                        <span class="badge bg-light text-muted border rounded-pill" style="font-size: 0.55rem; padding: 2px 6px;">
+                            メンバー
+                        </span>
+                    {% endif %}
+                </div>
+            </a>
+
             {% endfor %}
         {% endif %}
     </div>
@@ -146,40 +165,117 @@
 </div>
 
 <div class="mb-5">
-    <div class="px-1 mb-3">
-        <h6 class="fw-bold mb-0" style="font-size: 0.9rem;">参加中の配車ルーム</h6>
+    <div class="px-1 mb-3 d-flex justify-content-between align-items-center">
+        <h6 class="fw-bold mb-0" style="font-size: 0.9rem;">🚗 募集中の配車</h6>
     </div>
 
-    {% if joined_rooms %}
+    {% if available_rooms %}
         <div class="d-flex flex-column gap-3">
-            {% for room in joined_rooms %}
-            <a href="{{ url_for('rooms.entry_room', room_id=room.id) }}" class="text-decoration-none">
-                <div class="room-card d-flex justify-content-between align-items-center">
-                    <div>
-                        <div class="text-dark fw-bold mb-1" style="font-size: 1rem;">
-                            {{ room.name }}
-                        </div>
-                        <div class="text-muted d-flex align-items-center gap-2" style="font-size: 0.75rem;">
-                            <span><i class="bi bi-calendar-event"></i> {{ room.event.start_time.strftime('%m/%d') }}</span>
-                            <span><i class="bi bi-geo-alt"></i> {{ room.event.location }}</span>
+            {% for room in available_rooms %}
+            <a href="{{ url_for('rooms.room_detail', room_id=room.id) }}" class="text-decoration-none">
+                <div class="room-card position-relative overflow-hidden">
+                    <!-- グループラベル（カードの右上に配置） -->
+                    <div class="position-absolute top-0 end-0 mt-2 me-2">
+                        {% if room.event.group %}
+                            <span class="badge rounded-pill bg-walica-light text-walica border-0" style="font-size: 0.6rem; padding: 4px 10px;">
+                                <i class="bi bi-people-fill me-1"></i>{{ room.event.group.name }}
+                            </span>
+                        {% else %}
+                            <span class="badge rounded-pill bg-light text-muted border-0" style="font-size: 0.6rem; padding: 4px 10px;">
+                                <i class="bi bi-person-fill me-1"></i>個人
+                            </span>
+                        {% endif %}
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <!-- 1. 背景のアクセント：イベント名を左上にさりげなく（またはカード上部に薄い帯） -->
+                            <div class="mb-2">
+                                <small class="text-walica fw-bold opacity-75" style="font-size: 0.65rem; letter-spacing: 0.05em;">
+                                    {{ room.event.title|truncate(20) }}
+                                </small>
+                                <h6 class="text-dark fw-bold mb-0 mt-1" style="font-size: 1rem;">
+                                    {{ room.name }}
+                                </h6>
+                            </div>
+                            
+                            <!-- 2. アイコンを活用して「文字」を減らす -->
+                            <div class="d-flex align-items-center gap-3 text-muted mb-3" style="font-size: 0.75rem;">
+                                <div><i class="bi bi-clock-history me-1"></i>{{ room.event.start_time.strftime('%m/%d %H:%M') }}</div>
+                            </div>
+
+                            <!-- ステータス/参加人数 -->
+                            <!-- カード内の人数表示セクション -->
+                            <div class="d-flex align-items-center me-2">
+                                {% for entry in room.entries[:4] %}
+                                <img src="{{ url_for('static', filename=entry.user.icon or 'default.png') }}"
+                                    alt="{{ entry.user.name }}"
+                                    class="rounded-circle"
+                                    style="width: 28px; height: 28px; object-fit: cover;
+                                            border: 2px solid white;
+                                            {% if not loop.first %}margin-left: -10px;{% endif %}
+                                            z-index: {{ loop.revindex }}; position: relative;">
+                                {% endfor %}
+                                {% if room.entries|length > 4 %}
+                                <div class="rounded-circle bg-light d-flex align-items-center justify-content-center"
+                                    style="width: 28px; height: 28px; border: 2px solid white;
+                                            margin-left: -10px; position: relative; z-index: 0;">
+                                    <span style="font-size: 0.6rem; color: #999;">+{{ room.entries|length - 4 }}</span>
+                                </div>
+                                {% endif %}
+                            </div>
                         </div>
                     </div>
-                    <div class="text-end">
-                        <span class="badge bg-success-subtle text-success rounded-pill px-3 py-2" style="font-size: 0.65rem;">
-                            参加中 <i class="bi bi-chevron-right ms-1"></i>
-                        </span>
+
+                    <!-- 下部の進捗バー的なアクセント（参加済みならグレー、募集中なら緑） -->
+                    <div class="mt-3 pt-2 border-top d-flex justify-content-between align-items-center">
+                        <div class="small">
+                            {% if room.deadline %}
+                                <span class="text-danger" style="font-size: 0.65rem;">
+                                    <i class="bi bi-hourglass-split"></i> {{ room.deadline.strftime('%m/%d 締切') }}
+                                </span>
+                            {% else %}
+                                <span class="text-muted" style="font-size: 0.65rem;">常時募集中</span>
+                            {% endif %}
+                        </div>
+                        
+                        {% if room.id in joined_room_ids %}
+                            <span class="text-muted fw-bold" style="font-size: 0.7rem;">
+                                参加済み <i class="bi bi-check2-all text-success"></i>
+                            </span>
+                        {% else %}
+                            <span class="text-wal_green fw-bold" style="font-size: 0.7rem;">
+                                参加する <i class="bi bi-chevron-right"></i>
+                            </span>
+                        {% endif %}
                     </div>
                 </div>
             </a>
             {% endfor %}
         </div>
     {% else %}
-        <div class="text-center py-4 bg-light rounded-4 border border-dashed">
-            <i class="bi bi-car-front text-muted display-6 mb-2 d-block"></i>
-            <p class="text-muted small mb-0">予定されている配車はありません</p>
+        <div class="text-center py-5 bg-white rounded-4 shadow-sm border border-dashed">
+            <p class="text-muted mb-0">現在募集中のルームはありません</p>
         </div>
     {% endif %}
 </div>
+
+<style>
+    .room-card {
+        background: white;
+        padding: 1.25rem;
+        border-radius: 20px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        border: 1px solid rgba(0,0,0,0.03);
+        transition: all 0.2s ease;
+    }
+    .room-card:active {
+        transform: scale(0.97);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+    }
+    .text-wal_green { color: var(--walica-green); }
+    .bg-walica-light { background-color: rgba(32, 201, 151, 0.8); }
+</style>
 
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
 <script>

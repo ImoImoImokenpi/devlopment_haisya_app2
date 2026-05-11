@@ -1,0 +1,235 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="main-card border-0 shadow-sm mb-4 p-4" style="border-radius: 24px; background: white;">
+    <div class="mb-3">
+        <span class="badge rounded-pill px-3 py-2 mb-2 {% if event.needs_car %}bg-walica-light text-walica{% else %}bg-light text-muted{% endif %}" 
+            style="font-size: 0.65rem; font-weight: 600; letter-spacing: 0.5px;">
+            {% if event.needs_car %}🚗 配車あり{% else %}配車なし{% endif %}
+        </span>
+        <h2 class="fw-bold h4 mb-2 text-dark">{{ event.title }}</h2>
+        <p class="text-muted mb-0 small">
+            <i class="bi bi-geo-alt-fill text-walica me-1"></i> 場所：{{ event.location or "未指定" }}
+        </p>
+    </div>
+
+    <div class="bg-white rounded-4 p-3 d-flex justify-content-around text-center border" style="border-color: rgba(0,0,0,0.05) !important;">
+        <div class="flex-grow-1">
+            <small class="text-muted d-block mb-1" style="font-size: 0.65rem;">開始日時</small>
+            <span class="fw-bold text-dark small">{{ event.start_time.strftime('%Y/%m/%d %H:%M') }}</span>
+        </div>
+        <div class="vr my-1" style="opacity: 0.1;"></div>
+        <div class="flex-grow-1">
+            <small class="text-muted d-block mb-1" style="font-size: 0.65rem;">終了日時</small>
+            <span class="fw-bold text-dark small">
+                {{ event.end_time.strftime('%H:%M') if event.end_time else '--:--' }}
+            </span>
+        </div>
+    </div>
+</div>
+
+<div class="px-2 mb-3">
+    <div class="d-flex align-items-end justify-content-between">
+        <div>
+            <span class="text-walica fw-bold small" style="font-size: 0.7rem; letter-spacing: 1px;">ENTRY FORM</span>
+            <h3 class="fw-bold text-dark mb-0">{{ room.name }}</h3>
+        </div>
+        <div class="text-end">
+            <span class="badge bg-light text-dark rounded-pill border fw-normal" style="font-size: 0.7rem;">
+                <i class="bi bi-people me-1"></i>{{ participant_count }}人
+            </span>
+        </div>
+    </div>
+</div>
+{% if not entry %}
+    <!-- 未登録：エントリーフォーム -->
+    <form action="{{ url_for('rooms.entry_room', room_id=room.id) }}" method="POST" class="mb-5">
+        <div class="d-flex flex-column gap-3">
+            
+            <!-- 車出し設定 -->
+            <div class="main-card border-0 shadow-sm bg-white p-4 rounded-4">
+                <label class="fw-bold mb-3 d-block"><i class="bi bi-car-front me-2"></i>車出し設定</label>
+                <div class="form-check custom-check mb-3">
+                    <input class="form-check-input" type="checkbox" name="has_car" id="hasCarCheck" value="yes">
+                    <label class="form-check-label fw-bold" for="hasCarCheck">車を出せる</label>
+                </div>
+                <div id="capacityInput" class="ps-4 d-none">
+                    <div class="p-3 bg-light rounded-3">
+                        <label class="small text-muted mb-2 d-block">乗車可能人数（自分を除く）</label>
+                        <div class="d-flex align-items-center gap-3">
+                            <input type="number" name="capacity" class="form-control border-0 text-center fw-bold" style="width: 80px;" min="1" max="10" value="3">
+                            <span class="fw-bold">名</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 出演順（もしあれば） -->
+            {% if 'q_schedule' in selected_ids %}
+            <div class="main-card border-0 shadow-sm bg-white p-4 rounded-4">
+                <label class="fw-bold mb-3 d-block"><i class="bi bi-music-note-list me-2"></i>出演順</label>
+                <select name="schedule_id" class="form-select border-0 bg-light py-2 px-3 rounded-3" required>
+                    <option value="" disabled selected>選択してください</option>
+                    {% for s in schedules %}
+                        <option value="{{ s.id }}">{{ s.section }}部 {{ s.order }}番</option>
+                    {% endfor %}
+                </select>
+            </div>
+            {% endif %}
+
+            <!-- 希望・配慮（もしあれば） -->
+            {% if 'q_avoid' in selected_ids %}
+            <div class="main-card border-0 shadow-sm bg-white p-4 rounded-4">
+                <label class="fw-bold mb-3 d-block"><i class="bi bi-chat-dots me-2"></i>同乗の希望（任意）</label>
+                <input type="text" name="prefer_with" class="form-control border-0 bg-light py-2 mb-3 rounded-3" placeholder="一緒に乗りたい人">
+                <input type="text" name="avoid_with" class="form-control border-0 bg-light py-2 rounded-3" placeholder="避けたい人">
+            </div>
+            {% endif %}
+
+            <button type="submit" class="btn btn-walica py-3 fw-bold shadow-sm rounded-pill mt-3">
+                この内容で登録する
+            </button>
+        </div>
+    </form>
+{% else %}
+    <!-- 登録済み：確認用カード -->
+    <div class="main-card border-0 shadow-sm p-4 mb-5 rounded-4 bg-white">
+        <div class="d-flex align-items-center gap-3 mb-4 p-3 rounded-4" style="background: #f0fdf9;">
+            <i class="bi bi-check-circle-fill text-walica" style="font-size: 1.5rem;"></i>
+            <div>
+                <h6 class="fw-bold mb-0">参加登録済み</h6>
+                <small class="text-muted">あなたのステータスを確認できます</small>
+            </div>
+        </div>
+
+        <div class="small px-2">
+            <div class="d-flex justify-content-between py-2 border-bottom border-light">
+                <span class="text-muted">車の提供</span>
+                <span class="fw-bold">{% if entry.has_car %}🚗 あり（{{ entry.capacity }}人）{% else %}❌ なし（乗車希望）{% endif %}</span>
+            </div>
+            {% if entry.schedule_id %}
+            <div class="d-flex justify-content-between py-2 border-bottom border-light">
+                <span class="text-muted">出演順</span>
+                <span class="fw-bold">{{ entry.schedule_id.replace('-', '部 ') }}番</span>
+            </div>
+            {% endif %}
+        </div>
+        <div class="text-center mt-3">
+            <p class="text-muted" style="font-size: 0.65rem;">※内容変更は管理者に依頼してください</p>
+        </div>
+    </div>
+{% endif %}
+
+{# ── 4. 配車結果セクション ── #}
+{% if entry %}
+    <div class="px-2 mb-3 d-flex align-items-center justify-content-between">
+        <h6 class="fw-bold mb-0">🚗 配車マッチング結果</h6>
+        {% if latest %}
+        <span class="text-muted" style="font-size: 0.65rem;">{{ latest.executed_at.strftime('%m/%d %H:%M') }}</span>
+        {% endif %}
+    </div>
+
+    <!-- 管理者ツール -->
+    {% if event.created_by == current_user.id %}
+    <form action="{{ url_for('rooms.matching', room_id=room.id) }}" method="POST" class="mb-4">
+        <button type="submit" class="btn btn-outline-walica btn-sm w-100 rounded-pill py-2 fw-bold">
+            <i class="bi bi-shuffle me-1"></i> マッチングを実行
+        </button>
+    </form>
+    {% endif %}
+
+    {% if latest and cars_grouped %}
+        {% for driver_id, car in cars_grouped.items() %}
+        <div class="main-card border-0 shadow-sm mb-3 rounded-4 overflow-hidden bg-white">
+            <!-- カードヘッダー -->
+            <div class="px-3 py-2 d-flex align-items-center justify-content-between" style="background: #f8f9fa;">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="avatar-sm bg-walica text-white rounded-circle d-flex align-items-center justify-content-center" style="width:24px; height:24px;">
+                        <i class="bi bi-car-front-fill" style="font-size: 0.7rem;"></i>
+                    </div>
+                    <span class="fw-bold small">{{ car.driver.user.name }} の車</span>
+                </div>
+                <span class="badge rounded-pill bg-walica-light text-walica fw-bold" style="font-size: 0.65rem;">
+                    {{ car.members | length + 1 }} / {{ car.driver.capacity + 1 }}名
+                </span>
+            </div>
+
+            <!-- メンバーリスト -->
+            <div class="p-3">
+                <div class="d-flex align-items-center gap-3 mb-2">
+                    <span class="badge bg-primary-subtle text-primary rounded-pill" style="font-size: 0.55rem;">DRIVER</span>
+                    <span class="fw-bold small">{{ car.driver.user.name }}</span>
+                </div>
+                {% for member_entry in car.members %}
+                <div class="d-flex align-items-center gap-3 py-2 border-top border-light">
+                    <span class="badge bg-light text-muted rounded-pill" style="font-size: 0.55rem;">MEMBER</span>
+                    <span class="small text-dark flex-grow-1">{{ member_entry.user.name }}</span>
+                    {% if member_entry.has_rehersal %}
+                        <span class="text-walica" style="font-size: 0.65rem;"><i class="bi bi-clock me-1"></i>リハ</span>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+    {% elif latest %}
+        <div class="text-center py-5 bg-white rounded-4 shadow-sm">
+            <p class="text-muted small">マッチングに失敗しました（車不足など）</p>
+        </div>
+    {% else %}
+        <div class="text-center py-5 bg-white rounded-4 shadow-sm border-dashed">
+            <i class="bi bi-hourglass-top text-muted d-block mb-2" style="font-size: 1.5rem;"></i>
+            <p class="text-muted small">マッチングはまだ実行されていません</p>
+        </div>
+    {% endif %}
+
+    <!-- 未割り当て -->
+    {% if unassigned %}
+    <div class="main-card border-0 shadow-sm mt-4 rounded-4 overflow-hidden" style="border: 1px solid #ffc107 !important;">
+        <div class="bg-warning-subtle px-3 py-2 small fw-bold text-warning-emphasis">
+            <i class="bi bi-exclamation-triangle me-2"></i>未割り当てメンバー ({{ unassigned|length }})
+        </div>
+        <div class="p-3 bg-white">
+            {% for e in unassigned %}
+                <span class="badge bg-light text-dark border me-1 mb-1 fw-normal">{{ e.user.name }}</span>
+            {% endfor %}
+            <p class="text-muted mt-2 mb-0" style="font-size: 0.65rem;">※車の台数不足などの理由で自動割り当てできませんでした。</p>
+        </div>
+    </div>
+    {% endif %}
+
+{% endif %}
+
+<div class="mb-5"></div>
+
+<style>
+:root { --walica-green: #20c997; }
+.bg-walica-light { background-color: rgba(32, 201, 151, 0.1); }
+.text-walica { color: var(--walica-green); }
+.btn-walica { background-color: var(--walica-green); color: white; border: none; }
+.btn-walica:hover { background-color: #1bad82; color: white; }
+.btn-outline-walica { color: var(--walica-green); border-color: var(--walica-green); }
+.btn-outline-walica:hover { background-color: var(--walica-green); color: white; }
+
+.form-check-input:checked { background-color: var(--walica-green); border-color: var(--walica-green); }
+.border-dashed { border: 2px dashed #f0f0f0 !important; }
+
+/* 入力フォームの微調整 */
+.form-control:focus, .form-select:focus {
+    box-shadow: none;
+    background-color: #f8f9fa !important;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const carCheck = document.getElementById('hasCarCheck');
+    const capacityDiv = document.getElementById('capacityInput');
+    if (carCheck) {
+        carCheck.addEventListener('change', function() {
+            capacityDiv.classList.toggle('d-none', !this.checked);
+        });
+    }
+});
+</script>
+{% endblock %}
