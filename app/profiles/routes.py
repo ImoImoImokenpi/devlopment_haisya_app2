@@ -21,9 +21,17 @@ def edit():
     if request.method == 'POST':
         display_name = request.form.get('display_name', '').strip()
         file = request.files.get('icon')
+        genre = request.form.get('genre')
+        age = request.form.get('age')
 
         # 表示名の更新
         current_user.display_name = display_name or None
+        current_user.genre = genre or None
+
+        if age:
+            current_user.age = int(age)
+        else:
+            current_user.age = None
 
         # アイコン画像のアップロード
         if file and file.filename and allowed_file(file.filename):

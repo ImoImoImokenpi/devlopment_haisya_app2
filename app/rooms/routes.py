@@ -119,6 +119,26 @@ def room_detail(room_id):
                 Entry.room_id == room_id,
             ).all()
 
+    # 早帰りメンバーがいる車を上に並べる
+    def car_has_early_leaver(car):
+        all_members = [car["driver"]] + car["members"]
+        return any(m.early_leave for m in all_members)
+
+    cars_grouped = dict(
+        sorted(
+            cars_grouped.items(),
+            key=lambda item: car_has_early_leaver(item[1]),
+            reverse=True  # True（早帰りあり）を先頭に
+        )
+    )
+    
+    early_leavers = Entry.query.filter_by(
+        room_id=room_id,
+        early_leave=True
+    ).all()
+
+    entries = Entry.query.filter_by(room_id=room_id).all()
+
     return render_template(
         'room_detail.html',
         room=room,
@@ -130,6 +150,8 @@ def room_detail(room_id):
         latest=latest,
         cars_grouped=cars_grouped,
         unassigned=unassigned,
+        early_leavers=early_leavers,
+        entries=entries,
     )
 
 
@@ -144,6 +166,7 @@ def entry_room(room_id):
     selected_ids = [rq.question_id for rq in room_questions]
 
     has_car_val = request.form.get('has_car') == 'yes'
+    has_rehersal = request.form.get('has_rehersal') == 'yes'
 
     new_entry = Entry(
         room_id=room.id,
@@ -168,7 +191,6 @@ def entry_room(room_id):
 
     # 登録後はルーム詳細へ
     return redirect(url_for('rooms.room_detail', room_id=room_id))
-
 
 # ─────────────────────────────────────────
 # マッチング実行 (POST専用)
@@ -219,4 +241,21 @@ def matching(room_id):
         flash(f"割り当てできなかったメンバー: {names}", "warning")
 
     flash(f"{room.name} のマッチングを完了しました", "success")
+    return redirect(url_for('rooms.room_detail', room_id=room_id))
+
+@rooms_bp.route('/entry/<int:room_id>/early_leave', methods=['POST'])
+@login_required
+def early_leave(room_id):
+    entry = Entry.query.filter_by(
+        room_id=room_id,
+        user_id=current_user.id
+    ).first_or_404()
+
+    print(f"[DEBUG] entry.id={entry.id}, early_leave before={entry.early_leave}")  # ← 追加
+    
+    entry.early_leave = not entry.early_leave
+    db.session.commit()
+    
+    print(f"[DEBUG] early_leave after={entry.early_leave}")  # ← 追加
+
     return redirect(url_for('rooms.room_detail', room_id=room_id))

@@ -1,13 +1,17 @@
 {% extends "layout.html" %}
 
 {% block content %}
+{% from 'macros/avatar.html' import avatar %} 
 <!-- メインイベント情報 -->
-<div class="main-card border-0 shadow-sm mb-4 p-4" style="border-radius: 24px; background: white;">
+<div class="main-card border-0 shadow-sm mb-4 p-4" style="border-radius: 24px; background: linear-gradient(135deg, {{ (event.group.color ~ '40') if event.group else '#ffffff' }} 0%, white 60%);">
     <div class="mb-3">
-        <span class="badge rounded-pill px-3 py-2 mb-2 {% if event.needs_car %}bg-walica-light text-walica{% else %}bg-light text-muted{% endif %}" 
-            style="font-size: 0.65rem; font-weight: 600; letter-spacing: 0.5px;">
-            {% if event.needs_car %}🚗 配車あり{% else %}配車なし{% endif %}
-        </span>
+        <div class="d-flex justify-content-between align-items-start">
+            <span class="badge rounded-pill px-3 py-2 mb-2 {% if event.needs_car %}bg-walica-light text-walica{% else %}bg-light text-muted{% endif %}" 
+                style="font-size: 0.65rem; font-weight: 600; letter-spacing: 0.5px;">
+                {% if event.needs_car %}🚗 配車あり{% else %}配車なし{% endif %}
+            </span>
+        </div>
+
         <h2 class="fw-bold h4 mb-2 text-dark">{{ event.title }}</h2>
         <p class="text-muted mb-0 small">
             <i class="bi bi-geo-alt-fill text-walica me-1"></i> 場所：{{ event.location or "未指定" }}
@@ -60,13 +64,10 @@
                         <!-- カード内の人数表示セクション -->
                         <div class="d-flex align-items-center me-2">
                             {% for entry in room.entries[:4] %}
-                            <img src="{{ url_for('static', filename=entry.user.icon or 'default.png') }}"
-                                alt="{{ entry.user.name }}"
-                                class="rounded-circle"
-                                style="width: 28px; height: 28px; object-fit: cover;
-                                        border: 2px solid white;
-                                        {% if not loop.first %}margin-left: -10px;{% endif %}
-                                        z-index: {{ loop.revindex }}; position: relative;">
+                            <div style="{% if not loop.first %}margin-left: -10px;{% endif %}
+                                        position: relative; z-index: {{ loop.revindex }};">
+                                {{ avatar(entry.user, size=28) }}
+                            </div>
                             {% endfor %}
                             {% if room.entries|length > 4 %}
                             <div class="rounded-circle bg-light d-flex align-items-center justify-content-center"
@@ -75,7 +76,7 @@
                                 <span style="font-size: 0.6rem; color: #999;">+{{ room.entries|length - 4 }}</span>
                             </div>
                             {% endif %}
-                        </div>    
+                        </div>   
                     </div>
                 </div>
 
@@ -129,11 +130,14 @@
     {% endif %}
 {% endif %}
 
-<div class="text-center mt-4 pb-5">
-    <a href="/" class="text-muted small text-decoration-none opacity-50">
-        <i class="bi bi-arrow-left-short"></i> カレンダーに戻る
-    </a>
-</div>
+{% if event.created_by == current_user.id or is_admin %}
+<form action="{{ url_for('events.delete_event', event_id=event.id) }}" method="POST" class="mb-4"
+    onsubmit="return confirm('イベント「{{ event.title }}」を削除しますか？\nルームと参加者データもすべて削除されます。')">
+    <button type="submit" class="btn btn-danger btn-sm w-100 rounded-pill py-2 fw-bold">
+        <i class="bi bi-trash me-1"></i> イベントを削除する
+    </button>
+</form>
+{% endif %}
 
 <style>
     :root {

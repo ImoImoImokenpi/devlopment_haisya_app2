@@ -11,6 +11,9 @@ class User(db.Model, UserMixin):
     display_name = db.Column(db.String(50))
     icon = db.Column(db.String(200), default="default.png")
 
+    genre = db.Column(db.String(50))  # 所属ジャンル
+    age = db.Column(db.Integer)
+
     @property
     def name(self):
         return self.display_name or self.username

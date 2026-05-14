@@ -81,6 +81,19 @@
                     サークル名、旅行の名称、家族名など。
                 </div>
             </div>
+            <div class="mb-3">
+                <label class="fw-bold mb-2 d-block small">グループカラー</label>
+                <div class="d-flex gap-2 flex-wrap align-items-center">
+                    {% set colors = ['#20c997','#4dabf7','#f783ac','#ffa94d','#a9e34b','#cc5de8','#ff6b6b','#495057'] %}
+                    {% for c in colors %}
+                    <label class="color-swatch" style="background: {{ c }};">
+                        <input type="radio" name="color" value="{{ c }}"
+                            {% if loop.first %}checked{% endif %}
+                            style="display:none;">
+                    </label>
+                    {% endfor %}
+                </div>
+            </div>
 
             <div class="d-grid gap-3">
                 <button type="submit" class="btn btn-walica py-3 fw-bold rounded-pill shadow-sm">
@@ -128,6 +141,16 @@
     
     #inviteCode {
         user-select: all;
+    }
+
+    .color-swatch {
+        width: 30px; height: 30px; border-radius: 50%;
+        cursor: pointer; border: 2px solid transparent;
+        transition: all 0.15s; display: inline-block;
+    }
+    .color-swatch:has(input:checked) {
+        border-color: #333;
+        transform: scale(1.2);
     }
 </style>
 {% endblock %}

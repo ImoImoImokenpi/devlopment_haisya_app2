@@ -1,68 +1,68 @@
 {% extends "layout.html" %}
 
 {% block content %}
-
+{% from 'macros/avatar.html' import avatar %}
 <style>
     /* FullCalendarのカスタム：デザイン統一 */
+    /* 既存のカレンダーCSS全体をこれに置き換え */
     :root {
         --fc-border-color: #f1f3f5;
-        --fc-daygrid-dot-event-marker-size: 8px;
-        --fc-today-bg-color: rgba(32, 201, 151, 0.05);
+        --fc-today-bg-color: rgba(32, 201, 151, 0.06);
     }
-
-    #calendar {
-        background: white;
-        font-size: 0.9rem;
-    }
-
     .fc { border: none !important; }
-    .fc-theme-standard td, .fc-theme-standard th { border: 1px solid var(--fc-border-color); }
-    
+    .fc-theme-standard td, .fc-theme-standard th { border: 0.5px solid #f1f3f5; }
     .fc .fc-button-primary {
-        background-color: white !important;
-        border: 1px solid #dee2e6 !important;
-        color: #666 !important;
-        text-transform: capitalize;
-        font-weight: 500;
-        border-radius: 8px !important;
+        background: white !important; border: 0.5px solid #dee2e6 !important;
+        color: #666 !important; font-weight: 500; border-radius: 8px !important;
+        box-shadow: none !important;
     }
-    .fc .fc-button-primary:hover {
-        background-color: var(--bg-color) !important;
-        color: var(--walica-green) !important;
+    .fc .fc-button-primary:hover { color: var(--walica-green) !important; }
+    .fc-toolbar-title { font-size: 1rem !important; font-weight: 500; }
+    .fc .fc-col-header-cell-cushion {
+        font-size: 0.7rem; font-weight: 500; color: #aaa;
+        text-transform: uppercase; letter-spacing: 0.05em; padding: 6px 0;
     }
-    .fc .fc-button-active {
-        background-color: var(--walica-green) !important;
-        border-color: var(--walica-green) !important;
-        color: white !important;
+    .fc .fc-daygrid-day-number {
+        font-size: 0.8rem; padding: 4px 6px;
     }
-    
-    .fc-toolbar-title {
-        font-size: 1.1rem !important;
-        font-weight: 700;
-        color: var(--text-dark);
+    /* 平日：グレー */
+    .fc .fc-day:not(.fc-day-sat):not(.fc-day-sun) .fc-daygrid-day-number {
+        color: #aaa;
     }
-
-    .fc .fc-daygrid-day-top {
-        flex-direction: row;
-        justify-content: center;
-        font-size: 0.8rem;
+    /* 土曜：青 */
+    .fc .fc-day-sat .fc-daygrid-day-number { color: #2563eb; }
+    /* 日曜：赤 */
+    .fc .fc-day-sun .fc-daygrid-day-number { color: #dc2626; }
+    /* 今日：緑丸 */
+    .fc .fc-day-today .fc-daygrid-day-number {
+        background: var(--walica-green); color: white !important;
+        border-radius: 50%; width: 24px; height: 24px;
+        display: flex; align-items: center; justify-content: center;
+        font-weight: 500; padding: 0; margin: 4px auto 0;
     }
-
+    /* 祝日：オレンジ */
+    .fc-day-holiday .fc-daygrid-day-number { color: #ea580c !important; }
+    .fc .fc-daygrid-day-top { flex-direction: row; justify-content: center; }
+    /* 点をなくして帯スタイルに */
     .fc-daygrid-event {
         margin-top: 2px !important;
-        padding: 1px 4px !important;
-        border-radius: 4px !important;
-        font-size: 0.75rem !important;
+        padding: 2px 6px !important;
+        border-radius: 3px !important;
+        font-size: 0.68rem !important;
+        font-weight: 500 !important;
+        border: none !important;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
+    /* dotを非表示 */
+    .fc-daygrid-event-dot { display: none !important; }
+    .fc-event-time { display: none !important; }
 
-    .fc-toolbar { margin-bottom: 1rem !important; }
-
-    .event-needs-car::before {
-        content: "🚗";
-        margin-right: 4px;
-        font-size: 0.8rem;
+    .event-needs-car .fc-event-title::before {
+        content: "🚗 ";
+        font-size: 0.65rem;
     }
-
     /* グループバッジのスタイル */
     .group-tag {
         font-size: 0.7rem;
@@ -128,17 +128,12 @@
             <a href="{{ url_for('events.group_detail', group_id=gm.group.id) }}"
                class="text-decoration-none">
 
-                <div class="group-badge {% if gm.role == 'admin' %}border-walica-light{% endif %}">
-                    <i class="bi bi-people-fill {% if gm.role == 'admin' %}text-walica{% else %}text-secondary{% endif %}"></i>
+                <div class="group-badge border-0" style="background: {{ gm.group.color }}; color: white;">
+                    <i class="bi bi-people-fill"></i>
                     <span class="me-1">{{ gm.group.name }}</span>
-                    
                     {% if gm.role == 'admin' %}
-                        <span class="badge bg-walica text-muted border rounded-pill" style="font-size: 0.55rem; padding: 2px 6px;">
+                        <span class="badge rounded-pill border-0" style="background: rgba(0,0,0,0.2); font-size: 0.55rem; padding: 2px 6px;">
                             管理者
-                        </span>
-                    {% else %}
-                        <span class="badge bg-light text-muted border rounded-pill" style="font-size: 0.55rem; padding: 2px 6px;">
-                            メンバー
                         </span>
                     {% endif %}
                 </div>
@@ -177,11 +172,13 @@
                     <!-- グループラベル（カードの右上に配置） -->
                     <div class="position-absolute top-0 end-0 mt-2 me-2">
                         {% if room.event.group %}
-                            <span class="badge rounded-pill bg-walica-light text-walica border-0" style="font-size: 0.6rem; padding: 4px 10px;">
+                            <span class="badge rounded-pill border-0" 
+                                style="background: {{ room.event.group.color }}; color: white; font-size: 0.6rem; padding: 4px 10px;">
                                 <i class="bi bi-people-fill me-1"></i>{{ room.event.group.name }}
                             </span>
                         {% else %}
-                            <span class="badge rounded-pill bg-light text-muted border-0" style="font-size: 0.6rem; padding: 4px 10px;">
+                            <span class="badge rounded-pill border-0" 
+                                style="background: #adb5bd; color: white; font-size: 0.6rem; padding: 4px 10px;">
                                 <i class="bi bi-person-fill me-1"></i>個人
                             </span>
                         {% endif %}
@@ -208,13 +205,10 @@
                             <!-- カード内の人数表示セクション -->
                             <div class="d-flex align-items-center me-2">
                                 {% for entry in room.entries[:4] %}
-                                <img src="{{ url_for('static', filename=entry.user.icon or 'default.png') }}"
-                                    alt="{{ entry.user.name }}"
-                                    class="rounded-circle"
-                                    style="width: 28px; height: 28px; object-fit: cover;
-                                            border: 2px solid white;
-                                            {% if not loop.first %}margin-left: -10px;{% endif %}
-                                            z-index: {{ loop.revindex }}; position: relative;">
+                                <div style="{% if not loop.first %}margin-left: -10px;{% endif %}
+                                            position: relative; z-index: {{ loop.revindex }};">
+                                    {{ avatar(entry.user, size=28) }}
+                                </div>
                                 {% endfor %}
                                 {% if room.entries|length > 4 %}
                                 <div class="rounded-circle bg-light d-flex align-items-center justify-content-center"
@@ -279,36 +273,54 @@
 
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const calendarEl = document.getElementById('calendar');
-        const calendar = new FullCalendar.Calendar(calendarEl, {
-            initialView: 'dayGridMonth',
-            locale: 'ja',
-            height: 'auto',
-            headerToolbar: {
-                left: 'prev,next',
-                center: 'title',
-                right: 'today'
-            },
-            displayEventTime: false,
-            events: '/events/api/events',
+const HOLIDAYS = {
+    "2026-01-01":"元日","2026-01-12":"成人の日","2026-02-11":"建国記念の日",
+    "2026-02-23":"天皇誕生日","2026-03-20":"春分の日","2026-04-29":"昭和の日",
+    "2026-05-03":"憲法記念日","2026-05-04":"みどりの日","2026-05-05":"こどもの日",
+    "2026-07-20":"海の日","2026-08-11":"山の日","2026-09-21":"敬老の日",
+    "2026-09-23":"秋分の日","2026-10-12":"スポーツの日","2026-11-03":"文化の日",
+    "2026-11-23":"勤労感謝の日"
+};
 
-            dateClick: function(info) {
-                window.location.href = `/events/create?date=${info.dateStr}`;
-            },
-            eventClick: function(info) {
-                if (info.event.id) {
-                    window.location.href = `/events/detail/${info.event.id}`;
-                }
+document.addEventListener('DOMContentLoaded', function() {
+    const calendarEl = document.getElementById('calendar');
+    const calendar = new FullCalendar.Calendar(calendarEl, {
+        initialView: 'dayGridMonth',
+        locale: 'ja',
+        height: 'auto',
+        eventDisplay: 'block',
+        headerToolbar: { left: 'prev', center: 'title', right: 'next' },
+        displayEventTime: false,
+        // 「日」を除いて数字のみ表示
+        dayCellContent: function(arg) {
+            return { html: `<span>${arg.date.getDate()}</span>` };
+        },
+        // 祝日にクラスを付与
+        dayCellDidMount: function(arg) {
+            const d = arg.date.toISOString().split('T')[0];
+            if (HOLIDAYS[d]) {
+                arg.el.classList.add('fc-day-holiday');
+                const num = arg.el.querySelector('.fc-daygrid-day-number');
+                if (num) num.title = HOLIDAYS[d];
             }
-        });
-        calendar.render();
-
-        document.getElementById('addEventBtn').addEventListener('click', function() {
-            const today = new Date().toISOString().split('T')[0];
-            window.location.href = `/events/create?date=${today}`;
-        });
+        },
+        events: '/events/api/events',
+        dateClick: function(info) {
+            window.location.href = `/events/create?date=${info.dateStr}`;
+        },
+        eventClick: function(info) {
+            if (info.event.id) {
+                window.location.href = `/events/detail/${info.event.id}`;
+            }
+        }
     });
+    calendar.render();
+
+    document.getElementById('addEventBtn').addEventListener('click', function() {
+        const today = new Date().toISOString().split('T')[0];
+        window.location.href = `/events/create?date=${today}`;
+    });
+});
 </script>
 
 {% endblock %}

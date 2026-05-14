@@ -6,6 +6,7 @@ from ..models.event import Event
 from ..models.entry import Entry
 from ..models.group import Group, GroupMember
 from sqlalchemy import or_
+from sqlalchemy.orm import joinedload
 from flask import jsonify
 
 
@@ -35,9 +36,9 @@ def get_events_json():
             # 配車ありの場合はクラスを付与して🚗アイコンを表示
             'className': 'event-needs-car' if event.needs_car else '',
             # デザイン用の色設定
-            'backgroundColor': 'rgba(32, 201, 151, 0.1)' if event.needs_car else '#f8f9fa',
-            'borderColor': 'var(--walica-green)' if event.needs_car else '#dee2e6',
-            'textColor': 'var(--walica-green)' if event.needs_car else '#666',
+            'backgroundColor': event.group.color if event.group_id and event.group else '#adb5bd',
+            'borderColor': event.group.color if event.group_id and event.group else '#adb5bd',
+            'textColor': '#ffffff',
         })
     
     return jsonify(event_list)
@@ -83,11 +84,13 @@ def create_group():
     
     if request.method == 'POST':
         group_name = request.form.get('name')
+        color = request.form.get('color') or '#20c997'  # ← 追加
         
         # 1. グループの作成
         new_group = Group(
             name=group_name,
-            invite_code=Group.generate_unique_code()
+            invite_code=Group.generate_unique_code(),
+            color=color
         )
         db.session.add(new_group)
         db.session.flush() # IDを確定させる
@@ -125,9 +128,12 @@ def group_detail(group_id):
         return redirect(url_for("index"))
 
     # メンバー一覧取得
-    members = GroupMember.query.filter_by(
-        group_id=group.id
-    ).all()
+    members = (
+        GroupMember.query
+        .filter_by(group_id=group.id)
+        .options(joinedload(GroupMember.user))
+        .all()
+    )
 
     # グループイベント取得
     events = Event.query.filter_by(
@@ -280,10 +286,79 @@ def event_detail(event_id):
     joined_room_ids = [
         entry.room_id for entry in Entry.query.filter_by(user_id=current_user.id).all()
     ]
+
+    # is_admin を計算して渡す
+    is_admin = False
+    if event.group_id:
+        membership = GroupMember.query.filter_by(
+            group_id=event.group_id,
+            user_id=current_user.id,
+            role='admin'
+        ).first()
+        is_admin = membership is not None
     
     return render_template('event_detail.html', 
                            event=event, 
-                           joined_room_ids=joined_room_ids)
+                           joined_room_ids=joined_room_ids,
+                           is_admin=is_admin)
+
+@events_bp.route('/detail/<int:event_id>/delete', methods=['POST'])
+@login_required
+def delete_event(event_id):
+    event = Event.query.get_or_404(event_id)
+
+    # 権限チェック
+    is_creator = (event.created_by == current_user.id)
+    is_group_admin = False
+    if event.group_id:
+        membership = GroupMember.query.filter_by(
+            group_id=event.group_id,
+            user_id=current_user.id,
+            role='admin'
+        ).first()
+        is_group_admin = membership is not None
+
+    if not is_creator and not is_group_admin:
+        flash("このイベントを削除する権限がありません。", "danger")
+        return redirect(url_for('events.event_detail', event_id=event_id))
+
+    title = event.title
+    db.session.delete(event)  # cascade により Room→Entry→Matching も連鎖削除
+    db.session.commit()
+
+    flash(f"イベント「{title}」を削除しました。", "success")
+    return redirect(url_for('index'))
+
+
+@events_bp.route('/room/<int:room_id>/delete', methods=['POST'])
+@login_required
+def delete_room(room_id):
+    from ..models.room import Room
+
+    room = Room.query.get_or_404(room_id)
+    event = Event.query.get_or_404(room.event_id)
+
+    # 権限チェック
+    is_creator = (event.created_by == current_user.id)
+    is_group_admin = False
+    if event.group_id:
+        membership = GroupMember.query.filter_by(
+            group_id=event.group_id,
+            user_id=current_user.id,
+            role='admin'
+        ).first()
+        is_group_admin = membership is not None
+
+    if not is_creator and not is_group_admin:
+        flash("このルームを削除する権限がありません。", "danger")
+        return redirect(url_for('events.event_detail', event_id=event.id))
+
+    name = room.name
+    db.session.delete(room)  # cascade により Entry→Matching も連鎖削除
+    db.session.commit()
+
+    flash(f"ルーム「{name}」を削除しました。", "success")
+    return redirect(url_for('events.event_detail', event_id=event.id))
 
 # 実装イメージ
 @events_bp.route('/join', methods=['POST'])

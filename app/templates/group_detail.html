@@ -1,7 +1,7 @@
 {% extends "layout.html" %}
 
 {% block content %}
-
+{% from 'macros/avatar.html' import avatar %}
 <div class="d-flex align-items-center mb-4">
     <a href="{{ url_for('index') }}"
        class="text-decoration-none text-muted me-3">
@@ -89,19 +89,7 @@
 
                 <div class="d-flex align-items-center gap-3">
 
-                    <div class="rounded-circle d-flex align-items-center justify-content-center"
-                         style="
-                            width: 42px;
-                            height: 42px;
-                            background: rgba(32,201,151,0.1);
-                         ">
-
-                        {% if member.role == 'admin' %}
-                            👑
-                        {% else %}
-                            👤
-                        {% endif %}
-                    </div>
+                    {{ avatar(member.user, size=42, is_admin=(member.role == 'admin')) }}
 
                     <div>
                         <div class="fw-bold text-dark">

@@ -29,6 +29,14 @@ class Event(db.Model):
     # リレーションシップ（もし必要なら）
     creator = db.relationship("User", backref=db.backref("created_events", lazy=True))
 
+    # --- ここを追加：イベントが消えたら紐づくルームもすべて削除する ---
+    rooms = db.relationship(
+        "Room", 
+        backref="event", 
+        lazy=True, 
+        cascade="all, delete-orphan"
+    )
+
     def __init__(self, **kwargs):
         super(Event, self).__init__(**kwargs)
         # インスタンス作成時に招待コードがなければ自動生成

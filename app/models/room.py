@@ -24,13 +24,7 @@ class Room(db.Model):
 
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-    # リレーションシップ
-    # event.rooms でイベントに紐づく全ルームを取得可能に
-    event = db.relationship("Event", backref=db.backref("rooms", lazy=True))
-    # creator.rooms でユーザーが作った全ルームを取得可能に
-    creator = db.relationship("User", backref=db.backref("rooms", lazy=True))
-
-    entries = db.relationship("Entry", backref="room", lazy=True)
+    entries = db.relationship("Entry", backref="room", lazy=True, cascade="all, delete-orphan")
 
     def __repr__(self):
         return f'<Room {self.name}>'

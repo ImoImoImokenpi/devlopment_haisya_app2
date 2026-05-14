@@ -20,7 +20,7 @@ class MatchingResult(db.Model):
     unassigned_user_ids = db.Column(db.Text, default="")
 
     # リレーション
-    room = db.relationship("Room", backref=db.backref("matching_results", lazy=True))
+    room = db.relationship("Room", backref=db.backref("matching_results", lazy=True, cascade="all, delete-orphan"))
     executor = db.relationship("User", backref=db.backref("executed_matchings", lazy=True))
     assignments = db.relationship(
         "CarAssignment",

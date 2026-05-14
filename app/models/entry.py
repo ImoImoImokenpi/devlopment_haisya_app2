@@ -21,6 +21,8 @@ class Entry(db.Model):
     # 配慮事項（名前を直接入力する想定のため String に修正）
     prefer_with = db.Column(db.String(200))
     avoid_with = db.Column(db.String(200))
+
+    early_leave = db.Column(db.Boolean, default=False)
     
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 

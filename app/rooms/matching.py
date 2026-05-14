@@ -15,7 +15,7 @@ def build_cars_from_entries(entries):
         if entry.has_car and entry.capacity and entry.capacity > 0:
             cars.append({
                 "driver_entry": entry,
-                "capacity": entry.capacity,
+                "capacity": entry.capacity + 1,
                 "members": [entry],  # ドライバー自身を最初に追加
             })
     return cars
@@ -56,6 +56,10 @@ def calculate_pair_score(entry_a, entry_b):
 
     score = 0
 
+    # 早帰り同士を最優先でまとめる ← 追加
+    if entry_a.early_leave and entry_b.early_leave:
+        score += 300
+
     # リハの合致：両者 has_rehersal が同じ（True同士 or False同士）
     if entry_a.has_rehersal == entry_b.has_rehersal:
         score += 100
@@ -65,6 +69,18 @@ def calculate_pair_score(entry_a, entry_b):
             and entry_b.schedule_id
             and entry_a.schedule_id == entry_b.schedule_id):
         score += 50
+    
+    # 同じジャンル同士を優先（None同士は合致扱いしない）
+    if (entry_a.user.genre
+            and entry_b.user.genre
+            and entry_a.user.genre == entry_b.user.genre):
+        score += 30
+    
+    # 年齢が近いほど高スコア（差が5歳以内なら加点）
+    if entry_a.user.age and entry_b.user.age:
+        age_diff = abs(entry_a.user.age - entry_b.user.age)
+        if age_diff <= 1:
+            score += 30
 
     return score
 

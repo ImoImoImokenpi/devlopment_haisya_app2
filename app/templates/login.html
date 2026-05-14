@@ -1,20 +1,101 @@
 {% extends "layout.html" %}
 
 {% block content %}
+<div class="d-flex flex-column align-items-center justify-content-center" style="min-height: 80vh; padding: 2rem 1rem;">
 
-<h2>ログイン</h2>
+    <!-- ログインカード -->
+    <div class="main-card border-0 shadow-sm p-4 w-100" style="max-width: 360px; border-radius: 24px; background: white;">
 
-<form method="POST">
-    <label>ユーザ名</label><br>
-    <input name="username"><br><br>
+        <h2 class="fw-bold mb-1 text-dark" style="font-size: 1.1rem;">ログイン</h2>
+        <p class="text-muted mb-4" style="font-size: 0.72rem;">アカウント情報を入力してください</p>
 
-```
-<label>パスワード</label><br>
-<input type="password" name="password"><br><br>
+        <form method="POST" class="d-flex flex-column gap-3">
 
-<button type="submit">ログイン</button>
-```
+            <!-- ユーザー名 -->
+            <div>
+                <label class="fw-bold mb-2 d-block" style="font-size: 0.78rem;">
+                    <i class="bi bi-person me-1 text-walica"></i>ユーザー名
+                </label>
+                <input
+                    name="username"
+                    type="text"
+                    class="form-control border-0 bg-light rounded-3 py-2 px-3"
+                    placeholder="username"
+                    style="font-size: 0.88rem;"
+                    autocomplete="username"
+                    required
+                >
+            </div>
 
-</form>
+            <!-- パスワード -->
+            <div>
+                <label class="fw-bold mb-2 d-block" style="font-size: 0.78rem;">
+                    <i class="bi bi-lock me-1 text-walica"></i>パスワード
+                </label>
+                <div class="position-relative">
+                    <input
+                        name="password"
+                        type="password"
+                        id="passwordInput"
+                        class="form-control border-0 bg-light rounded-3 py-2 px-3"
+                        placeholder="••••••••"
+                        style="font-size: 0.88rem; padding-right: 2.8rem !important;"
+                        autocomplete="current-password"
+                        required
+                    >
+                    <button type="button" id="togglePassword"
+                            class="btn btn-link position-absolute top-50 end-0 translate-middle-y pe-3 text-muted p-0"
+                            style="font-size: 0.85rem; text-decoration: none;">
+                        <i class="bi bi-eye" id="eyeIcon"></i>
+                    </button>
+                </div>
+            </div>
 
+            <!-- ログインボタン -->
+            <button type="submit" class="btn btn-walica py-3 fw-bold shadow-sm rounded-pill mt-2"
+                    style="font-size: 0.9rem; letter-spacing: 0.3px;">
+                <i class="bi bi-box-arrow-in-right me-2"></i>ログイン
+            </button>
+
+        </form>
+    </div>
+
+</div>
+
+<style>
+:root { --walica-green: #20c997; }
+.text-walica  { color: var(--walica-green); }
+.btn-walica   { background-color: var(--walica-green); color: white; border: none; }
+.btn-walica:hover { background-color: #1bad82; color: white; }
+
+.form-control:focus {
+    box-shadow: 0 0 0 3px rgba(32, 201, 151, 0.15);
+    background-color: #f8f9fa !important;
+    border-color: transparent !important;
+}
+
+/* カード入場アニメーション */
+.main-card {
+    animation: cardIn 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes cardIn {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const toggle = document.getElementById('togglePassword');
+    const input  = document.getElementById('passwordInput');
+    const icon   = document.getElementById('eyeIcon');
+    if (toggle) {
+        toggle.addEventListener('click', function () {
+            const isPassword = input.type === 'password';
+            input.type = isPassword ? 'text' : 'password';
+            icon.className = isPassword ? 'bi bi-eye-slash' : 'bi bi-eye';
+        });
+    }
+});
+</script>
 {% endblock %}

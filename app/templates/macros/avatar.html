@@ -1,0 +1,50 @@
+{# ================================================================
+   templates/macros/avatar.html
+   使い方:
+     {% from 'macros/avatar.html' import avatar %}
+     {{ avatar(user, size=42) }}
+     {{ avatar(user, size=28, is_admin=true) }}
+================================================================ #}
+
+{% macro avatar(user, size=42, is_admin=false) %}
+{% set has_icon = user.icon and user.icon != 'default.png' %}
+<div class="position-relative d-inline-block flex-shrink-0">
+
+    {% if has_icon %}
+    {# ── アイコン画像あり ── #}
+    <img src="{{ url_for('static', filename=user.icon) }}"
+         alt="{{ user.name }}"
+         class="rounded-circle"
+         style="width: {{ size }}px; height: {{ size }}px;
+                object-fit: cover;
+                border: 2px solid rgba(32,201,151,0.3);">
+
+    {% else %}
+    {# ── 未設定：人型シルエット ── #}
+    <div class="rounded-circle d-flex align-items-center justify-content-center"
+         style="width: {{ size }}px; height: {{ size }}px;
+                background: #e9ecef;
+                border: 2px solid rgba(0,0,0,0.06);
+                overflow: hidden;">
+        {# 人型シルエット SVG #}
+        <svg xmlns="http://www.w3.org/2000/svg"
+             viewBox="0 0 24 24"
+             style="width: {{ (size * 0.65) | int }}px;
+                    height: {{ (size * 0.65) | int }}px;
+                    margin-top: {{ (size * 0.15) | int }}px;"
+             fill="#adb5bd">
+            <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/>
+        </svg>
+    </div>
+    {% endif %}
+
+    {# 管理者バッジ #}
+    {% if is_admin %}
+    <span class="position-absolute bottom-0 end-0"
+          style="font-size: {{ [size * 0.3, 10] | max | int }}px; line-height: 1;">
+        👑
+    </span>
+    {% endif %}
+
+</div>
+{% endmacro %}

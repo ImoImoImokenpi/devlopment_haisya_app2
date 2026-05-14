@@ -10,6 +10,7 @@ class Group(db.Model):
     # 招待コード（インデックスを貼って検索を高速化）
     invite_code = db.Column(db.String(10), unique=True, nullable=False, index=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    color = db.Column(db.String(7), default='#20c997')  # ← これがあるか？
     
     # リレーションシップ
     events = db.relationship('Event', backref='group', lazy=True, cascade="all, delete-orphan")
