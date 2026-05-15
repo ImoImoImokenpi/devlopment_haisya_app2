@@ -125,20 +125,4 @@
 .icon-default { color: #adb5bd; }
 </style>
 
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const scheduleCheck = document.getElementById('q_schedule');
-    const settingDiv = document.getElementById('section_setting');
-
-    if (scheduleCheck) {
-        scheduleCheck.addEventListener('change', function() {
-            if (this.checked) {
-                settingDiv.classList.remove('d-none');
-            } else {
-                settingDiv.classList.add('d-none');
-            }
-        });
-    }
-});
-</script>
 {% endblock %}

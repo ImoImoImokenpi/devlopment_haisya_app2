@@ -1,0 +1,52 @@
+{% extends "layout.html" %}
+{% block content %}
+{% from 'macros/avatar.html' import avatar %}
+
+<div class="d-flex align-items-center mb-4">
+    <a href="javascript:history.back()" class="text-decoration-none text-muted me-3">
+        <i class="bi bi-chevron-left" style="font-size: 1.2rem;"></i>
+    </a>
+    <h5 class="fw-bold mb-0">プロフィール</h5>
+</div>
+
+<div class="main-card border-0 shadow-sm rounded-4 p-4 mb-4 text-center">
+    {{ avatar(user, size=80) }}
+    <h5 class="fw-bold mt-3 mb-0">{{ user.display_name or "名無し" }}</h5>
+</div>
+
+{% if user.genre %}
+<div class="main-card border-0 shadow-sm rounded-4 p-4 mb-4">
+    <div class="d-flex justify-content-between align-items-center">
+        <span class="text-muted small">所属</span>
+        <span class="fw-bold">{{user.genre}}</span>
+    </div>
+</div>
+{% endif %}
+
+{% if user.age %}
+<div class="main-card border-0 shadow-sm rounded-4 p-4 mb-4">
+    <div class="d-flex justify-content-between align-items-center">
+        <span class="text-muted small">代</span>
+        <span class="fw-bold">{{user.age}}</span>
+    </div>
+</div>
+{% endif %}
+
+<div class="main-card border-0 shadow-sm rounded-4 p-4 mb-4">
+    {% if user.line_url %}
+    <a href="{{ e.user.line_url }}" target="_blank" class="text-success">
+        <i class="bi bi-line" style="font-size: 1.2rem;"></i>
+    </a>
+    {% endif %}
+
+    {% if user.insta_url %}
+    <a href="{{ e.user.insta_url }}" target="_blank" style="color: #E1306C;">
+        <i class="bi bi-instagram" style="font-size: 1.2rem;"></i>
+    </a>
+    {% endif %}
+</div>
+
+<style>
+.main-card { background: white; }
+</style>
+{% endblock %}

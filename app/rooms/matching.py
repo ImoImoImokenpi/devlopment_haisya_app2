@@ -1,9 +1,7 @@
-# rooms/matching.py
-
 from itertools import combinations
 from collections import defaultdict
 from ..models import Entry  # パスは適宜調整
-
+import random
 
 def build_cars_from_entries(entries):
     """
@@ -45,42 +43,64 @@ def is_ng_pair(entry_a, entry_b):
     return b_name in a_avoids or a_name in b_avoids
 
 
+def hard_constraints_ok(entry_a, entry_b):
+    """
+    絶対に守るべき制約を確認する。
+    False なら同乗不可。
+    - NGペア (avoid_with)
+    - リハーサル有無の不一致
+    - スケジュール（両者に schedule_id がある場合は一致必須）
+    - 早帰り有無の不一致
+    """
+    if is_ng_pair(entry_a, entry_b):
+        return False
+    if entry_a.has_rehersal != entry_b.has_rehersal:
+        return False
+    if (entry_a.schedule_id and entry_b.schedule_id
+            and entry_a.schedule_id != entry_b.schedule_id):
+        return False
+    if entry_a.early_leave != entry_b.early_leave:
+        return False
+    return True
+
+
+def calculate_soft_score(entry_a, entry_b):
+    """
+    ジャンル・年齢のみのソフトスコア。
+    ランダム／ドキドキでは高低を操作する対象。
+    """
+    score = 0
+    if (entry_a.user.genre and entry_b.user.genre
+            and entry_a.user.genre == entry_b.user.genre):
+        score += 30
+    if entry_a.user.age and entry_b.user.age:
+        if abs(entry_a.user.age - entry_b.user.age) <= 1:
+            score += 30
+    return score
+
+
 def calculate_pair_score(entry_a, entry_b):
     """
     ペアのスコアを返す。高いほど同乗させたい。
     NG ペアは -999999。
     """
-    # ハード制約（即除外）
     if is_ng_pair(entry_a, entry_b):
         return -999999
 
     score = 0
 
-    # 早帰り同士を最優先でまとめる ← 追加
     if entry_a.early_leave and entry_b.early_leave:
         score += 300
 
-    # リハの合致：両者 has_rehersal が同じ（True同士 or False同士）
     if entry_a.has_rehersal == entry_b.has_rehersal:
         score += 100
 
-    # 出演順の合致：schedule_id が同じ（None同士は合致扱いしない）
     if (entry_a.schedule_id
             and entry_b.schedule_id
             and entry_a.schedule_id == entry_b.schedule_id):
         score += 50
-    
-    # 同じジャンル同士を優先（None同士は合致扱いしない）
-    if (entry_a.user.genre
-            and entry_b.user.genre
-            and entry_a.user.genre == entry_b.user.genre):
-        score += 30
-    
-    # 年齢が近いほど高スコア（差が5歳以内なら加点）
-    if entry_a.user.age and entry_b.user.age:
-        age_diff = abs(entry_a.user.age - entry_b.user.age)
-        if age_diff <= 1:
-            score += 30
+
+    score += calculate_soft_score(entry_a, entry_b)
 
     return score
 
@@ -156,6 +176,92 @@ def assign_to_cars(room_id):
     unassigned = []
     for passenger in sorted_passengers:
         car = best_car_for(passenger)
+        if car:
+            car["members"].append(passenger)
+        else:
+            unassigned.append(passenger)
+
+    return cars, unassigned
+
+
+def _valid_cars_for(passenger, cars):
+    """ハード制約をすべて満たす空き車を返す。"""
+    result = []
+    for car in cars:
+        if len(car["members"]) >= car["capacity"]:
+            continue
+        if all(hard_constraints_ok(passenger, m) for m in car["members"]):
+            result.append(car)
+    return result
+
+
+def assign_to_cars_random(room_id):
+    """ハード制約を守りつつランダムに割り当てる。"""
+    entries = Entry.query.filter_by(room_id=room_id).all()
+
+    if not entries:
+        return [], []
+
+    cars = build_cars_from_entries(entries)
+
+    if not cars:
+        return [], entries
+
+    driver_ids = {car["driver_entry"].id for car in cars}
+    passengers = [e for e in entries if e.id not in driver_ids]
+
+    # ハード制約で絞り込みやすい人を先に割り当て
+    sorted_passengers = sorted(
+        passengers,
+        key=lambda e: (e.schedule_id is not None, e.has_rehersal),
+        reverse=True,
+    )
+
+    unassigned = []
+    for passenger in sorted_passengers:
+        available = _valid_cars_for(passenger, cars)
+        if available:
+            random.choice(available)["members"].append(passenger)
+        else:
+            unassigned.append(passenger)
+
+    return cars, unassigned
+
+
+def assign_to_cars_dokidoki(room_id):
+    """ハード制約を守りつつソフトスコア（ジャンル・年代）が最も低い車を選ぶ。"""
+    entries = Entry.query.filter_by(room_id=room_id).all()
+
+    if not entries:
+        return [], []
+
+    cars = build_cars_from_entries(entries)
+
+    if not cars:
+        return [], entries
+
+    driver_ids = {car["driver_entry"].id for car in cars}
+    passengers = [e for e in entries if e.id not in driver_ids]
+
+    sorted_passengers = sorted(
+        passengers,
+        key=lambda e: (e.schedule_id is not None, e.has_rehersal),
+        reverse=True,
+    )
+
+    def worst_soft_car(passenger):
+        """ハード制約OK の車の中でソフトスコアが最も低い車を返す。"""
+        available = _valid_cars_for(passenger, cars)
+        if not available:
+            return None
+        def avg_soft(car):
+            scores = [calculate_soft_score(passenger, m) for m in car["members"]]
+            return sum(scores) / len(scores) if scores else 0
+        return min(available, key=avg_soft)
+
+    unassigned = []
+    for passenger in sorted_passengers:
+        car = worst_soft_car(passenger)
         if car:
             car["members"].append(passenger)
         else:

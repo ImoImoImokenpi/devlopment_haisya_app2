@@ -14,6 +14,9 @@ class User(db.Model, UserMixin):
     genre = db.Column(db.String(50))  # 所属ジャンル
     age = db.Column(db.Integer)
 
+    line_url = db.Column(db.String(200), nullable=True)
+    insta_url = db.Column(db.String(200), nullable=True)
+
     @property
     def name(self):
         return self.display_name or self.username

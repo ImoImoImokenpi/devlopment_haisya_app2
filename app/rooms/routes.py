@@ -7,7 +7,8 @@ from ..models.question_master import QuestionMaster
 from ..models.room_question import RoomQuestion
 from ..models.event import Event
 from ..models.matching import MatchingResult, CarAssignment
-from ..rooms.matching import assign_to_cars
+from ..models.group import GroupMember
+from ..rooms.matching import assign_to_cars, assign_to_cars_random, assign_to_cars_dokidoki
 from datetime import datetime
 from werkzeug.utils import secure_filename
 import os
@@ -139,6 +140,17 @@ def room_detail(room_id):
 
     entries = Entry.query.filter_by(room_id=room_id).all()
 
+    is_admin = False
+    group_members = []
+    username_to_name = {e.user.username: e.user.name for e in entries}
+    if room.event.group:
+        memberships = GroupMember.query.filter_by(group_id=room.event.group.id).all()
+        group_members = [m.user for m in memberships if m.user_id != current_user.id]
+        for m in memberships:
+            username_to_name.setdefault(m.user.username, m.user.name)
+            if m.user_id == current_user.id and m.role == 'admin':
+                is_admin = True
+
     return render_template(
         'room_detail.html',
         room=room,
@@ -152,6 +164,9 @@ def room_detail(room_id):
         unassigned=unassigned,
         early_leavers=early_leavers,
         entries=entries,
+        group_members=group_members,
+        is_admin=is_admin,
+        username_to_name=username_to_name,
     )
 
 
@@ -204,7 +219,13 @@ def matching(room_id):
         flash("権限がありません", "danger")
         return redirect(url_for('rooms.room_detail', room_id=room_id))
 
-    cars, unassigned = assign_to_cars(room_id)
+    matching_type = request.form.get('matching_type', 'score')
+    if matching_type == 'random':
+        cars, unassigned = assign_to_cars_random(room_id)
+    elif matching_type == 'dokidoki':
+        cars, unassigned = assign_to_cars_dokidoki(room_id)
+    else:
+        cars, unassigned = assign_to_cars(room_id)
 
     if not cars:
         flash("車を登録しているメンバーがいません", "warning")
@@ -251,11 +272,7 @@ def early_leave(room_id):
         user_id=current_user.id
     ).first_or_404()
 
-    print(f"[DEBUG] entry.id={entry.id}, early_leave before={entry.early_leave}")  # ← 追加
-    
     entry.early_leave = not entry.early_leave
     db.session.commit()
-    
-    print(f"[DEBUG] early_leave after={entry.early_leave}")  # ← 追加
 
     return redirect(url_for('rooms.room_detail', room_id=room_id))

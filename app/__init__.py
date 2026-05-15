@@ -1,6 +1,5 @@
 from flask import Flask
 from .extensions import db, login_manager, migrate
-from .scheduler import scheduler, check_deadlines
 
 def create_app():
     app = Flask(__name__)
@@ -17,13 +16,11 @@ def create_app():
     from .auth.routes import auth_bp
     from .events.routes import events_bp
     from .rooms.routes import rooms_bp
-    from .matching.routes import matching_bp
     from .profiles.routes import profile_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(events_bp)
     app.register_blueprint(rooms_bp)
-    app.register_blueprint(matching_bp)
     app.register_blueprint(profile_bp)
 
     @app.route("/")

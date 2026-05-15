@@ -61,9 +61,10 @@
                 {{ group.invite_code }}
             </div>
 
-            <button class="btn btn-sm btn-light border rounded-pill"
-                    onclick="copyInviteCode()">
-                <i class="bi bi-copy"></i>
+            <button class="btn btn-sm btn-light border rounded-pill copy-btn"
+                    data-invite-code="{{ group.invite_code }}"
+                    style="font-size: 0.75rem; padding: 2px 10px;">
+                <i class="bi bi-copy me-1"></i><span>コピー</span>
             </button>
 
         </div>
@@ -89,7 +90,9 @@
 
                 <div class="d-flex align-items-center gap-3">
 
-                    {{ avatar(member.user, size=42, is_admin=(member.role == 'admin')) }}
+                    <a href="{{ url_for('profile.public_profile', user_id=member.user.id) }}" class="text-decoration-none">
+                        {{ avatar(member.user, size=42, is_admin=(member.role == 'admin')) }}
+                    </a>
 
                     <div>
                         <div class="fw-bold text-dark">
@@ -233,22 +236,5 @@
     transform: scale(0.98);
 }
 </style>
-
-<script>
-function copyInviteCode() {
-
-    const code = "{{ group.invite_code }}";
-
-    navigator.clipboard.writeText(code);
-
-    const toast = document.getElementById("copyToast");
-
-    toast.classList.remove("d-none");
-
-    setTimeout(() => {
-        toast.classList.add("d-none");
-    }, 1800);
-}
-</script>
 
 {% endblock %}

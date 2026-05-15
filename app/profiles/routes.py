@@ -23,10 +23,14 @@ def edit():
         file = request.files.get('icon')
         genre = request.form.get('genre')
         age = request.form.get('age')
+        line_url = request.form.get('line_url', '').strip()
+        insta_url = request.form.get('insta_url', '').strip()
 
         # 表示名の更新
         current_user.display_name = display_name or None
         current_user.genre = genre or None
+        current_user.line_url = line_url or None
+        current_user.insta_url = insta_url or None
 
         if age:
             current_user.age = int(age)
@@ -47,3 +51,10 @@ def edit():
         return redirect(url_for('profile.edit'))
 
     return render_template('profile_setting.html')
+
+@profile_bp.route('/user/<int:user_id>')
+@login_required
+def public_profile(user_id):
+    from ..models.user import User
+    user = User.query.get_or_404(user_id)
+    return render_template('public_profile.html', user=user)

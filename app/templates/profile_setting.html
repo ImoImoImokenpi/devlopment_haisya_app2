@@ -83,6 +83,19 @@
         </div>
     </div>
 
+    <!-- profile_edit.html 等 -->
+    <div class="mb-4">
+        <label class="form-label small fw-bold text-muted px-1">連絡先URL</label>
+        <div class="bg-white rounded-4 p-3 shadow-sm">
+            <label class="fw-bold small mb-2"><i class="bi bi-line text-success me-1"></i>LINE</label>
+            <input type="url" name="line_url" class="form-control rounded-pill" 
+                value="{{ current_user.line_url or '' }}" placeholder="https://line.me/ti/p/...">
+            <label class="fw-bold small mb-2"><i class="bi bi-instagram text-danger me-1"></i>Instagram</label>
+            <input type="url" name="insta_url" class="form-control rounded-pill" 
+                value="{{ current_user.insta_url or '' }}" placeholder="https://instagram.com/...">
+        </div>
+    </div>
+
     {# ── ユーザー名（変更不可） ── #}
     <div class="mb-4">
         <label class="form-label small fw-bold text-muted px-1">ユーザー名</label>
@@ -112,17 +125,5 @@
     box-shadow: 0 0 0 0.2rem rgba(32, 201, 151, 0.15);
 }
 </style>
-
-<script>
-document.getElementById('iconInput').addEventListener('change', function () {
-    const file = this.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = e => {
-        document.getElementById('iconPreview').src = e.target.result;
-    };
-    reader.readAsDataURL(file);
-});
-</script>
 
 {% endblock %}
