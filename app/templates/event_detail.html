@@ -6,10 +6,16 @@
 <div class="main-card border-0 shadow-sm mb-4 p-4" style="border-radius: 24px; background: linear-gradient(135deg, {{ (event.group.color ~ '40') if event.group else '#ffffff' }} 0%, white 60%);">
     <div class="mb-3">
         <div class="d-flex justify-content-between align-items-start">
-            <span class="badge rounded-pill px-3 py-2 mb-2 {% if event.needs_car %}bg-walica-light text-walica{% else %}bg-light text-muted{% endif %}" 
+            <span class="badge rounded-pill px-3 py-2 mb-2 {% if event.needs_car %}bg-walica-light text-walica{% else %}bg-light text-muted{% endif %}"
                 style="font-size: 0.65rem; font-weight: 600; letter-spacing: 0.5px;">
                 {% if event.needs_car %}🚗 配車あり{% else %}配車なし{% endif %}
             </span>
+            {% if event.created_by == current_user.id or is_admin %}
+            <button type="button" class="btn btn-light btn-sm rounded-pill px-3"
+                    style="font-size: 0.7rem;" data-bs-toggle="modal" data-bs-target="#editEventModal">
+                <i class="bi bi-pencil me-1"></i>編集
+            </button>
+            {% endif %}
         </div>
 
         <h2 class="fw-bold h4 mb-2 text-dark">{{ event.title }}</h2>
@@ -131,6 +137,51 @@
 {% endif %}
 
 {% if event.created_by == current_user.id or is_admin %}
+<!-- イベント編集モーダル -->
+<div class="modal fade" id="editEventModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow-lg">
+            <div class="modal-header border-0 px-4 pt-4 pb-1">
+                <h6 class="modal-title fw-bold"><i class="bi bi-pencil me-2 text-walica"></i>イベントを編集</h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form action="{{ url_for('events.edit_event', event_id=event.id) }}" method="POST">
+                <div class="modal-body px-4 pb-2">
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">タイトル</label>
+                        <input type="text" name="title" class="form-control rounded-3"
+                               value="{{ event.title }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">場所</label>
+                        <input type="text" name="location" class="form-control rounded-3"
+                               value="{{ event.location or '' }}" placeholder="未指定">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">開始日時</label>
+                        <input type="datetime-local" name="start_time" class="form-control rounded-3"
+                               value="{{ event.start_time.strftime('%Y-%m-%dT%H:%M') }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">終了日時</label>
+                        <input type="datetime-local" name="end_time" class="form-control rounded-3"
+                               value="{{ event.end_time.strftime('%Y-%m-%dT%H:%M') if event.end_time else '' }}">
+                    </div>
+                    <div class="form-check custom-check mb-3">
+                        <input class="form-check-input" type="checkbox" name="needs_car" id="editNeedsCarCheck"
+                               {% if event.needs_car %}checked{% endif %}>
+                        <label class="form-check-label fw-bold" for="editNeedsCarCheck">配車あり</label>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 px-4 pb-4">
+                    <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">キャンセル</button>
+                    <button type="submit" class="btn btn-walica rounded-pill px-4 fw-bold">保存する</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <form action="{{ url_for('events.delete_event', event_id=event.id) }}" method="POST" class="mb-4"
     onsubmit="return confirm('イベント「{{ event.title }}」を削除しますか？\nルームと参加者データもすべて削除されます。')">
     <button type="submit" class="btn btn-danger btn-sm w-100 rounded-pill py-2 fw-bold">

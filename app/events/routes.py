@@ -302,6 +302,39 @@ def event_detail(event_id):
                            joined_room_ids=joined_room_ids,
                            is_admin=is_admin)
 
+@events_bp.route('/detail/<int:event_id>/edit', methods=['POST'])
+@login_required
+def edit_event(event_id):
+    event = Event.query.get_or_404(event_id)
+
+    is_creator = event.created_by == current_user.id
+    is_group_admin = False
+    if event.group_id:
+        membership = GroupMember.query.filter_by(
+            group_id=event.group_id,
+            user_id=current_user.id,
+            role='admin'
+        ).first()
+        is_group_admin = membership is not None
+
+    if not is_creator and not is_group_admin:
+        flash("編集する権限がありません。", "danger")
+        return redirect(url_for('events.event_detail', event_id=event_id))
+
+    event.title = request.form.get('title') or event.title
+    event.location = request.form.get('location') or None
+    start_str = request.form.get('start_time')
+    end_str = request.form.get('end_time')
+    if start_str:
+        event.start_time = datetime.strptime(start_str, '%Y-%m-%dT%H:%M')
+    event.end_time = datetime.strptime(end_str, '%Y-%m-%dT%H:%M') if end_str else None
+    event.needs_car = request.form.get('needs_car') == 'on'
+
+    db.session.commit()
+    flash("イベントを更新しました。", "success")
+    return redirect(url_for('events.event_detail', event_id=event_id))
+
+
 @events_bp.route('/detail/<int:event_id>/delete', methods=['POST'])
 @login_required
 def delete_event(event_id):

@@ -264,6 +264,29 @@ def matching(room_id):
     flash(f"{room.name} のマッチングを完了しました", "success")
     return redirect(url_for('rooms.room_detail', room_id=room_id))
 
+@rooms_bp.route('/entry/<int:room_id>/edit', methods=['POST'])
+@login_required
+def edit_entry(room_id):
+    entry = Entry.query.filter_by(room_id=room_id, user_id=current_user.id).first_or_404()
+    room_questions = RoomQuestion.query.filter_by(room_id=room_id).all()
+    selected_ids = [rq.question_id for rq in room_questions]
+
+    has_car_val = request.form.get('has_car') == 'yes'
+    entry.has_car = has_car_val
+    entry.capacity = request.form.get('capacity', type=int) if has_car_val else 0
+
+    if 'q_schedule' in selected_ids:
+        entry.has_rehersal = request.form.get('has_rehersal') == 'yes'
+
+    if 'q_avoid' in selected_ids:
+        entry.prefer_with = request.form.get('prefer_with') or None
+        entry.avoid_with = request.form.get('avoid_with') or None
+
+    db.session.commit()
+    flash("回答を更新しました。", "success")
+    return redirect(url_for('rooms.room_detail', room_id=room_id))
+
+
 @rooms_bp.route('/entry/<int:room_id>/early_leave', methods=['POST'])
 @login_required
 def early_leave(room_id):
