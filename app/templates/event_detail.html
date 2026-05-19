@@ -3,26 +3,24 @@
 {% block content %}
 {% from 'macros/avatar.html' import avatar %} 
 <!-- メインイベント情報 -->
-<div class="main-card border-0 shadow-sm mb-4 p-4" style="border-radius: 24px; background: linear-gradient(135deg, {{ (event.group.color ~ '40') if event.group else '#ffffff' }} 0%, white 60%);">
-    <div class="mb-3">
-        <div class="d-flex justify-content-between align-items-start">
-            <span class="badge rounded-pill px-3 py-2 mb-2 {% if event.needs_car %}bg-walica-light text-walica{% else %}bg-light text-muted{% endif %}"
-                style="font-size: 0.65rem; font-weight: 600; letter-spacing: 0.5px;">
-                {% if event.needs_car %}🚗 配車あり{% else %}配車なし{% endif %}
-            </span>
-            {% if event.created_by == current_user.id or is_admin %}
-            <button type="button" class="btn btn-light btn-sm rounded-pill px-3"
-                    style="font-size: 0.7rem;" data-bs-toggle="modal" data-bs-target="#editEventModal">
-                <i class="bi bi-pencil me-1"></i>編集
-            </button>
-            {% endif %}
-        </div>
+<div class="main-card border-0 shadow-sm mb-4 p-4 position-relative" style="border-radius: 24px; background: linear-gradient(135deg, {{ (event.group.color ~ '40') if event.group else '#ffffff' }} 0%, white 60%);">
+    {% if event.created_by == current_user.id or is_admin %}
+    <button type="button" class="btn btn-light btn-sm rounded-pill px-3 position-absolute top-0 end-0 mt-3 me-3"
+            style="font-size: 0.7rem;" data-bs-toggle="modal" data-bs-target="#editEventModal">
+        <i class="bi bi-pencil me-1">🖋 編集</i>
+    </button>
+    {% endif %}
 
+    <div class="mb-3">
         <h2 class="fw-bold h4 mb-2 text-dark">{{ event.title }}</h2>
         <p class="text-muted mb-0 small">
             <i class="bi bi-geo-alt-fill text-walica me-1"></i> 場所：{{ event.location or "未指定" }}
         </p>
     </div>
+
+    {% if event.description %}
+    <p class="text-muted small mb-3" style="white-space: pre-wrap;">{{ event.description }}</p>
+    {% endif %}
 
     <div class="bg-white rounded-4 p-3 d-flex justify-content-around text-center border" style="border-color: rgba(0,0,0,0.05) !important;">
         <div class="flex-grow-1">
@@ -166,6 +164,11 @@
                         <label class="form-label small fw-bold">終了日時</label>
                         <input type="datetime-local" name="end_time" class="form-control rounded-3"
                                value="{{ event.end_time.strftime('%Y-%m-%dT%H:%M') if event.end_time else '' }}">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">メモ・詳細</label>
+                        <textarea name="description" class="form-control rounded-3" rows="3"
+                                  placeholder="自由記述（任意）" style="resize: none;">{{ event.description or '' }}</textarea>
                     </div>
                     <div class="form-check custom-check mb-3">
                         <input class="form-check-input" type="checkbox" name="needs_car" id="editNeedsCarCheck"

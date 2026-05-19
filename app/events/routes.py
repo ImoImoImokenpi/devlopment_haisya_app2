@@ -33,12 +33,25 @@ def get_events_json():
             'title': event.title,
             'start': event.start_time.isoformat(),
             'end': event.end_time.isoformat() if event.end_time else None,
-            # 配車ありの場合はクラスを付与して🚗アイコンを表示
-            'className': 'event-needs-car' if event.needs_car else '',
-            # デザイン用の色設定
+            'className': 'event-needs-car' if event.rooms else '',
             'backgroundColor': event.group.color if event.group_id and event.group else '#adb5bd',
             'borderColor': event.group.color if event.group_id and event.group else '#adb5bd',
             'textColor': '#ffffff',
+            'extendedProps': {
+                'location': event.location or '',
+                'needs_car': event.needs_car,
+                'group_name': event.group.name if event.group else None,
+                'group_color': event.group.color if event.group else '#adb5bd',
+                'rooms': [
+                    {
+                        'id': room.id,
+                        'name': room.name,
+                        'entry_count': len(room.entries),
+                        'deadline': room.deadline.strftime('%m/%d') if room.deadline else None,
+                    }
+                    for room in event.rooms
+                ],
+            },
         })
     
     return jsonify(event_list)
@@ -239,6 +252,7 @@ def create_event():
         group_id = request.form.get('group_id')
         title = request.form.get('title')
         location = request.form.get('location')
+        description = request.form.get('description') or None
         start_str = request.form.get('start_time')
         end_str = request.form.get('end_time')
 
@@ -264,11 +278,11 @@ def create_event():
             group_id=final_group_id,
             title=title,
             location=location,
+            description=description,
             start_time=start_time,
             end_time=end_time,
             needs_car=needs_car,
             created_by=current_user.id
-            # group_id は現在選択中のルームIDがあればセット
         )
 
         db.session.add(new_event)
@@ -323,6 +337,7 @@ def edit_event(event_id):
 
     event.title = request.form.get('title') or event.title
     event.location = request.form.get('location') or None
+    event.description = request.form.get('description') or None
     start_str = request.form.get('start_time')
     end_str = request.form.get('end_time')
     if start_str:

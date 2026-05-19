@@ -3,8 +3,6 @@
 {% block content %}
 {% from 'macros/avatar.html' import avatar %}
 <style>
-    /* FullCalendarのカスタム：デザイン統一 */
-    /* 既存のカレンダーCSS全体をこれに置き換え */
     :root {
         --fc-border-color: #f1f3f5;
         --fc-today-bg-color: rgba(32, 201, 151, 0.06);
@@ -22,257 +20,346 @@
         font-size: 0.7rem; font-weight: 500; color: #aaa;
         text-transform: uppercase; letter-spacing: 0.05em; padding: 6px 0;
     }
-    .fc .fc-daygrid-day-number {
-        font-size: 0.8rem; padding: 4px 6px;
-    }
-    /* 平日：グレー */
-    .fc .fc-day:not(.fc-day-sat):not(.fc-day-sun) .fc-daygrid-day-number {
-        color: #aaa;
-    }
-    /* 土曜：青 */
+    .fc .fc-daygrid-day-number { font-size: 0.8rem; padding: 4px 6px; }
+    .fc .fc-day:not(.fc-day-sat):not(.fc-day-sun) .fc-daygrid-day-number { color: #aaa; }
     .fc .fc-day-sat .fc-daygrid-day-number { color: #2563eb; }
-    /* 日曜：赤 */
     .fc .fc-day-sun .fc-daygrid-day-number { color: #dc2626; }
-    /* 今日：緑丸 */
     .fc .fc-day-today .fc-daygrid-day-number {
         background: var(--walica-green); color: white !important;
         border-radius: 50%; width: 24px; height: 24px;
         display: flex; align-items: center; justify-content: center;
         font-weight: 500; padding: 0; margin: 4px auto 0;
     }
-    /* 祝日：オレンジ */
     .fc-day-holiday .fc-daygrid-day-number { color: #ea580c !important; }
     .fc .fc-daygrid-day-top { flex-direction: row; justify-content: center; }
-    /* 点をなくして帯スタイルに */
     .fc-daygrid-event {
-        margin-top: 2px !important;
-        padding: 2px 6px !important;
-        border-radius: 3px !important;
-        font-size: 0.68rem !important;
-        font-weight: 500 !important;
-        border: none !important;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
+        margin-top: 2px !important; padding: 2px 6px !important;
+        border-radius: 3px !important; font-size: 0.68rem !important;
+        font-weight: 500 !important; border: none !important;
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
-    /* dotを非表示 */
     .fc-daygrid-event-dot { display: none !important; }
     .fc-event-time { display: none !important; }
+    .event-needs-car .fc-event-title::before { content: "🚗 "; font-size: 0.65rem; }
 
-    .event-needs-car .fc-event-title::before {
-        content: "🚗 ";
-        font-size: 0.65rem;
-    }
-    /* グループバッジのスタイル */
-    .group-tag {
-        font-size: 0.7rem;
-        padding: 2px 8px;
-        border-radius: 50px;
-        background: #e9ecef;
-        color: #6c757d;
-        display: inline-block;
-        margin-bottom: 4px;
-    }
-
-    /* 既存のスタイルに追記 */
     .group-badge {
-        font-size: 0.75rem;
-        padding: 6px 14px; /* 少しゆとりを持たせる */
-        border-radius: 50px;
-        background: white;
-        color: var(--text-dark);
-        border: 1px solid #dee2e6;
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.02);
-        flex-shrink: 0; /* 折り返し防止 */
+        font-size: 0.75rem; padding: 6px 14px; border-radius: 50px;
+        background: white; color: var(--text-dark); border: 1px solid #dee2e6;
+        display: flex; align-items: center; gap: 6px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.02); flex-shrink: 0;
     }
+    .overflow-auto::-webkit-scrollbar { display: none; }
 
-    /* 管理者の場合のバッジ枠線（さりげなく緑に） */
-    .border-walica-light {
-        border-color: rgba(32, 201, 151, 0.3) !important;
-        background-color: rgba(32, 201, 151, 0.02);
+    /* ボトムシート */
+    .day-sheet {
+        position: fixed; bottom: 0; left: 0; right: 0;
+        background: white; border-radius: 20px 20px 0 0;
+        box-shadow: 0 -4px 24px rgba(0,0,0,0.1);
+        z-index: 1050;
+        transform: translateY(100%);
+        transition: transform 0.3s cubic-bezier(0.4,0,0.2,1);
+        max-height: 60vh; overflow-y: auto;
     }
+    .day-sheet.show { transform: translateY(0); }
+    .day-sheet-overlay {
+        position: fixed; inset: 0;
+        z-index: 1049; pointer-events: none;
+    }
+    .day-sheet-overlay.show { pointer-events: auto; }
+    .day-sheet-handle {
+        width: 36px; height: 4px; background: #e0e0e0;
+        border-radius: 2px; margin: 10px auto 14px;
+    }
+    .day-sheet-title {
+        font-size: 0.85rem; font-weight: 600; text-align: center;
+        padding: 0 1rem 12px; color: #1a1a1a;
+    }
+    .day-event-item {
+        margin: 0 14px 8px; padding: 10px 12px;
+        background: #f8fffe; border-radius: 10px;
+        border-left: 3px solid var(--walica-green);
+    }
+    .day-group-badge {
+        display: inline-flex; align-items: center; gap: 4px;
+        font-size: 0.62rem; font-weight: 600; color: white;
+        padding: 2px 8px; border-radius: 20px; margin-bottom: 5px;
+    }
+    .day-event-title { font-size: 0.82rem; font-weight: 600; color: #1a1a1a; }
+    .day-event-time { font-size: 0.7rem; color: #999; margin-top: 2px; }
+    .day-badge-deadline { background: rgba(239,68,68,0.1); color: #dc2626; font-size: 0.62rem; font-weight: 600; padding: 2px 8px; border-radius: 20px; }
 
-    /* 横スクロールを滑らかに */
-    .overflow-auto::-webkit-scrollbar {
-        display: none;
+    /* カード内 左右レイアウト */
+    .day-event-row { display: flex; align-items: stretch; }
+    .day-event-left { flex: 1; min-width: 0; display: block; }
+    .day-event-divider { width: 0.5px; background: #f1f3f5; margin: 0 10px; flex-shrink: 0; }
+    .day-rooms-col { width: 110px; flex-shrink: 0; display: flex; flex-direction: column; gap: 5px; }
+    .day-rooms-label { font-size: 0.6rem; font-weight: 600; color: #bbb; letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 2px; }
+    .day-rooms-empty { align-items: center; justify-content: center; color: #ccc; font-size: 0.68rem; gap: 4px; }
+    .day-room-chip { display: flex; flex-direction: column; gap: 2px; padding: 5px 7px; border-radius: 8px; background: #f8f9fa; transition: background 0.15s; }
+    .day-room-chip:active { background: #e9ecef; }
+    .day-room-chip-name { font-size: 0.7rem; font-weight: 600; color: #1a1a1a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .day-room-chip-meta { display: flex; justify-content: space-between; align-items: center; font-size: 0.62rem; color: #aaa; }
+    .day-room-chip-deadline { color: #dc2626; font-weight: 600; }
+    .day-add-btn {
+        margin: 8px 14px 20px; width: calc(100% - 28px);
+        padding: 13px; border-radius: 12px; border: none;
+        background: var(--walica-green); color: white;
+        font-size: 0.85rem; font-weight: 600;
+        display: flex; align-items: center; justify-content: center; gap: 6px;
+        cursor: pointer; box-shadow: 0 4px 12px rgba(32,201,151,0.3);
+        transition: transform 0.15s;
     }
-    
-    /* ルームカード（下部） */
-    .room-card {
-        background: white;
-        padding: 1rem;
-        border-radius: 16px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-        border-left: 4px solid var(--walica-green);
-        transition: transform 0.2s;
+    .day-add-btn:active { transform: scale(0.97); }
+
+    .page-bottom-spacer { height: 40px; }
+
+    /* 締め切り間近カード */
+    .deadline-room-card {
+        background: white; border-radius: 12px; padding: 10px 14px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        border: 1px solid #f1f3f5;
+        transition: background 0.15s;
+        width: 200px; min-width: 200px;
     }
-    .room-card:active { transform: scale(0.98); }
+    .deadline-room-card:active { background: #f8f9fa; }
+    .deadline-group-badge {
+        font-size: 0.58rem; font-weight: 700; color: white;
+        padding: 1px 7px; border-radius: 20px; flex-shrink: 0;
+    }
+    .deadline-event-name { font-size: 0.7rem; color: #999; }
+    .deadline-room-name { font-size: 0.8rem; font-weight: 600; color: #1a1a1a; }
+    .deadline-status-joined { font-size: 0.68rem; color: #aaa; font-weight: 500; }
+    .deadline-status-join { font-size: 0.68rem; color: var(--walica-green); font-weight: 600; }
+    .deadline-days {
+        font-size: 0.62rem; font-weight: 700; padding: 2px 8px;
+        border-radius: 20px; background: #f1f3f5; color: #888;
+    }
+    .deadline-soon { background: rgba(255,193,7,0.15); color: #b45309; }
+    .deadline-urgent { background: rgba(239,68,68,0.12); color: #dc2626; }
 </style>
 
+<!-- グループエリア -->
 <div class="mb-4">
     <div class="d-flex justify-content-between align-items-center mb-2 px-1">
         <h6 class="fw-bold mb-0" style="font-size: 0.9rem;">所属グループ</h6>
-        <span class="text-muted" style="font-size: 0.7rem;">全 {{ my_groups|length if my_groups else 0 }} 件</span>
+        <div class="d-flex align-items-center gap-2">
+            <span class="text-muted" style="font-size: 0.7rem;">全 {{ my_groups|length if my_groups else 0 }} 件</span>
+            <a href="{{ url_for('events.join_by_code') }}"
+               class="btn btn-sm btn-light border rounded-pill px-3 text-muted d-flex align-items-center gap-1"
+               style="font-size: 0.72rem; padding-top: 4px; padding-bottom: 4px;">
+                <i class="bi bi-hash">＃参加</i>
+            </a>
+        </div>
     </div>
     <div class="d-flex gap-2 overflow-auto pb-2" style="white-space: nowrap; scrollbar-width: none;">
         <div class="group-badge bg-light border-0 text-muted">
             <i class="bi bi-person-fill"></i> 個人
         </div>
-        
         {% if my_groups %}
             {% for gm in my_groups %}
-
-            <a href="{{ url_for('events.group_detail', group_id=gm.group.id) }}"
-               class="text-decoration-none">
-
+            <a href="{{ url_for('events.group_detail', group_id=gm.group.id) }}" class="text-decoration-none">
                 <div class="group-badge border-0" style="background: {{ gm.group.color }}; color: white;">
                     <i class="bi bi-people-fill"></i>
                     <span class="me-1">{{ gm.group.name }}</span>
                     {% if gm.role == 'admin' %}
-                        <span class="badge rounded-pill border-0" style="background: rgba(0,0,0,0.2); font-size: 0.55rem; padding: 2px 6px;">
-                            管理者
-                        </span>
+                        <span class="badge rounded-pill border-0" style="background: rgba(0,0,0,0.2); font-size: 0.55rem; padding: 2px 6px;">管理者</span>
                     {% endif %}
                 </div>
             </a>
-
             {% endfor %}
         {% endif %}
     </div>
 </div>
 
-<div id="calendar" class="mb-4 shadow-sm rounded-4 p-2 bg-white"></div>
-
-<div class="row g-2 mb-5">
-    <div class="col-8">
-        <button id="addEventBtn" class="btn btn-walica-reverce py-3 w-100 rounded-4 shadow-sm fw-bold">
-            <i class="bi bi-plus-lg"></i> 予定を追加
-        </button>
+<!-- 締め切り間近のルーム -->
+{% if deadline_rooms %}
+<div class="mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-2 px-1">
+        <h6 class="fw-bold mb-0" style="font-size: 0.9rem;">⏰ 締め切り間近</h6>
+        <span class="text-muted" style="font-size: 0.7rem;">{{ deadline_rooms|length }} 件</span>
     </div>
-    <div class="col-4">
-        <a href="{{ url_for('events.join_by_code') }}" class="btn btn-light py-3 w-100 rounded-4 shadow-sm border text-muted">
-            <i class="bi bi-hash"></i> 参加
-        </a>
-    </div>
-</div>
-
-<div class="mb-5">
-    <div class="px-1 mb-3 d-flex justify-content-between align-items-center">
-        <h6 class="fw-bold mb-0" style="font-size: 0.9rem;">🚗 募集中の配車</h6>
-    </div>
-
-    {% if available_rooms %}
-        <div class="d-flex flex-column gap-3">
-            {% for room in available_rooms %}
-            <a href="{{ url_for('rooms.room_detail', room_id=room.id) }}" class="text-decoration-none">
-                <div class="room-card position-relative overflow-hidden">
-                    <!-- グループラベル（カードの右上に配置） -->
-                    <div class="position-absolute top-0 end-0 mt-2 me-2">
-                        {% if room.event.group %}
-                            <span class="badge rounded-pill border-0" 
-                                style="background: {{ room.event.group.color }}; color: white; font-size: 0.6rem; padding: 4px 10px;">
-                                <i class="bi bi-people-fill me-1"></i>{{ room.event.group.name }}
-                            </span>
-                        {% else %}
-                            <span class="badge rounded-pill border-0" 
-                                style="background: #adb5bd; color: white; font-size: 0.6rem; padding: 4px 10px;">
-                                <i class="bi bi-person-fill me-1"></i>個人
-                            </span>
-                        {% endif %}
-                    </div>
-
-                    <div class="d-flex justify-content-between align-items-start">
-                        <div>
-                            <!-- 1. 背景のアクセント：イベント名を左上にさりげなく（またはカード上部に薄い帯） -->
-                            <div class="mb-2">
-                                <small class="text-walica fw-bold opacity-75" style="font-size: 0.65rem; letter-spacing: 0.05em;">
-                                    {{ room.event.title|truncate(20) }}
-                                </small>
-                                <h6 class="text-dark fw-bold mb-0 mt-1" style="font-size: 1rem;">
-                                    {{ room.name }}
-                                </h6>
-                            </div>
-                            
-                            <!-- 2. アイコンを活用して「文字」を減らす -->
-                            <div class="d-flex align-items-center gap-3 text-muted mb-3" style="font-size: 0.75rem;">
-                                <div><i class="bi bi-clock-history me-1"></i>{{ room.event.start_time.strftime('%m/%d %H:%M') }}</div>
-                            </div>
-
-                            <!-- ステータス/参加人数 -->
-                            <!-- カード内の人数表示セクション -->
-                            <div class="d-flex align-items-center me-2">
-                                {% for entry in room.entries[:4] %}
-                                <div style="{% if not loop.first %}margin-left: -10px;{% endif %}
-                                            position: relative; z-index: {{ loop.revindex }};">
-                                    {{ avatar(entry.user, size=28) }}
-                                </div>
-                                {% endfor %}
-                                {% if room.entries|length > 4 %}
-                                <div class="rounded-circle bg-light d-flex align-items-center justify-content-center"
-                                    style="width: 28px; height: 28px; border: 2px solid white;
-                                            margin-left: -10px; position: relative; z-index: 0;">
-                                    <span style="font-size: 0.6rem; color: #999;">+{{ room.entries|length - 4 }}</span>
-                                </div>
-                                {% endif %}
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- 下部の進捗バー的なアクセント（参加済みならグレー、募集中なら緑） -->
-                    <div class="mt-3 pt-2 border-top d-flex justify-content-between align-items-center">
-                        <div class="small">
-                            {% if room.deadline %}
-                                <span class="text-danger" style="font-size: 0.65rem;">
-                                    <i class="bi bi-hourglass-split"></i> {{ room.deadline.strftime('%m/%d 締切') }}
-                                </span>
-                            {% else %}
-                                <span class="text-muted" style="font-size: 0.65rem;">常時募集中</span>
-                            {% endif %}
-                        </div>
-                        
-                        {% if room.id in joined_room_ids %}
-                            <span class="text-muted fw-bold" style="font-size: 0.7rem;">
-                                参加済み <i class="bi bi-check2-all text-success"></i>
-                            </span>
-                        {% else %}
-                            <span class="text-wal_green fw-bold" style="font-size: 0.7rem;">
-                                参加する <i class="bi bi-chevron-right"></i>
-                            </span>
-                        {% endif %}
-                    </div>
+    <div class="d-flex gap-2 overflow-auto pb-1" style="scrollbar-width: none;">
+        {% for room in deadline_rooms %}
+        {% set days_left = ((room.deadline - now).days) if room.deadline else 0 %}
+        <a href="{{ url_for('rooms.room_detail', room_id=room.id) }}" class="text-decoration-none flex-shrink-0">
+            <div class="deadline-room-card">
+                <div class="d-flex align-items-center gap-2 mb-2">
+                    {% if room.event.group %}
+                    <span class="deadline-group-badge" style="background: {{ room.event.group.color }};">
+                        {{ room.event.group.name }}
+                    </span>
+                    {% endif %}
+                    <span class="deadline-event-name text-truncate">{{ room.event.title }}</span>
                 </div>
-            </a>
-            {% endfor %}
-        </div>
-    {% else %}
-        <div class="text-center py-5 bg-white rounded-4 shadow-sm border border-dashed">
-            <p class="text-muted mb-0">現在募集中のルームはありません</p>
-        </div>
-    {% endif %}
+                <div class="deadline-room-name mb-2">🚗 {{ room.name }}</div>
+                <div class="d-flex justify-content-between align-items-center">
+                    {% if room.id in my_entry_room_ids %}
+                    <span class="deadline-status-joined"><i class="bi bi-check2-circle me-1"></i>参加済み</span>
+                    {% else %}
+                    <span class="deadline-status-join">参加する <i class="bi bi-chevron-right"></i></span>
+                    {% endif %}
+                    <span class="deadline-days {% if days_left <= 1 %}deadline-urgent{% elif days_left <= 3 %}deadline-soon{% endif %}">
+                        {% if days_left == 0 %}今日締切{% elif days_left == 1 %}明日締切{% else %}あと{{ days_left }}日{% endif %}
+                    </span>
+                </div>
+            </div>
+        </a>
+        {% endfor %}
+    </div>
 </div>
+{% endif %}
 
-<style>
-    .room-card {
-        background: white;
-        padding: 1.25rem;
-        border-radius: 20px;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-        border: 1px solid rgba(0,0,0,0.03);
-        transition: all 0.2s ease;
-    }
-    .room-card:active {
-        transform: scale(0.97);
-        box-shadow: 0 2px 8px rgba(0,0,0,0.02);
-    }
-    .text-wal_green { color: var(--walica-green); }
-    .bg-walica-light { background-color: rgba(32, 201, 151, 0.8); }
-</style>
+<!-- カレンダー -->
+<div id="calendar" class="mb-3 shadow-sm rounded-4 p-2 bg-white"></div>
+
+<div class="page-bottom-spacer"></div>
+
+<!-- ボトムシート -->
+<div class="day-sheet-overlay" id="daySheetOverlay"></div>
+<div class="day-sheet" id="daySheet">
+    <div class="day-sheet-handle"></div>
+    <div class="day-sheet-title" id="daySheetTitle">—</div>
+    <div id="daySheetEvents"></div>
+    <button class="day-add-btn" id="dayAddBtn">
+        <i class="bi bi-plus-circle"></i>
+        <span>この日に予定を追加</span>
+    </button>
+</div>
 
 {% block extra_scripts %}
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
+<script>
+const HOLIDAYS = {
+    "2026-01-01":"元日","2026-01-12":"成人の日","2026-02-11":"建国記念の日",
+    "2026-02-23":"天皇誕生日","2026-03-20":"春分の日","2026-04-29":"昭和の日",
+    "2026-05-03":"憲法記念日","2026-05-04":"みどりの日","2026-05-05":"こどもの日",
+    "2026-07-20":"海の日","2026-08-11":"山の日","2026-09-21":"敬老の日",
+    "2026-09-23":"秋分の日","2026-10-12":"スポーツの日","2026-11-03":"文化の日",
+    "2026-11-23":"勤労感謝の日"
+};
+
+document.addEventListener('DOMContentLoaded', function () {
+    const calendarEl = document.getElementById('calendar');
+    let selectedDate = null;
+
+    const calendar = new FullCalendar.Calendar(calendarEl, {
+        initialView: 'dayGridMonth',
+        locale: 'ja',
+        height: 'auto',
+        headerToolbar: { left: 'prev', center: 'title', right: 'next' },
+        events: '{{ url_for("events.get_events_json") }}',
+        eventDisplay: 'block',
+        displayEventTime: false,
+        dayCellContent: function(arg) {
+            return { html: `<span>${arg.date.getDate()}</span>` };
+        },
+        dayCellDidMount: function(arg) {
+            const d = arg.date.toISOString().split('T')[0];
+            if (HOLIDAYS[d]) {
+                arg.el.classList.add('fc-day-holiday');
+                const num = arg.el.querySelector('.fc-daygrid-day-number');
+                if (num) num.title = HOLIDAYS[d];
+            }
+        },
+        dateClick: function(info) {
+            openDaySheet(info.dateStr);
+        },
+        eventClick: function(info) {
+            info.jsEvent.preventDefault();
+            openDaySheet(info.event.startStr.split('T')[0]);
+        }
+    });
+
+    calendar.render();
+
+    calendarEl.addEventListener('click', function(e) {
+        // イベントバーのクリックは eventClick に任せるのでスキップ
+        if (e.target.closest('.fc-event')) return;
+
+        const dayEl = e.target.closest('[data-date]');
+        if (dayEl) {
+            openDaySheet(dayEl.getAttribute('data-date'));
+        }
+    });
+
+    // ── ボトムシートを開く
+    function openDaySheet(dateStr) {
+        selectedDate = dateStr;
+
+        const d = new Date(dateStr + 'T00:00:00');
+        const wdays = ['日','月','火','水','木','金','土'];
+        document.getElementById('daySheetTitle').textContent =
+            `${d.getMonth()+1}月${d.getDate()}日（${wdays[d.getDay()]}）の予定`;
+
+        const events = calendar.getEvents().filter(e => e.startStr.split('T')[0] === dateStr);
+        const container = document.getElementById('daySheetEvents');
+
+        if (events.length === 0) {
+            container.innerHTML =
+                `<p class="text-center text-muted mb-3" style="font-size:0.8rem;padding:0 14px;">予定はありません</p>`;
+        } else {
+            const fmt = t => t ? t.toLocaleTimeString('ja-JP', {hour:'2-digit', minute:'2-digit'}) : '';
+            container.innerHTML = events.map(e => {
+                const time     = fmt(e.start);
+                const end      = e.end ? ' 〜 ' + fmt(e.end) : '';
+                const color    = e.backgroundColor || 'var(--walica-green)';
+                const location   = e.extendedProps?.location || '';
+                const groupName  = e.extendedProps?.group_name || null;
+                const groupColor = e.extendedProps?.group_color || color;
+                const groupBadge = groupName
+                    ? `<span class="day-group-badge" style="background:${groupColor};"><i class="bi bi-people-fill"></i> ${groupName}</span>`
+                    : `<span class="day-group-badge" style="background:#adb5bd;"><i class="bi bi-person-fill"></i> 個人</span>`;
+                const rooms = e.extendedProps?.rooms || [];
+                const roomsCol = rooms.length > 0 ? `
+                    <div class="day-rooms-col">
+                        <div class="day-rooms-label">🚗配車ルーム</div>
+                        ${rooms.map(r => `
+                        <a href="/rooms/room/${r.id}" class="day-room-chip text-decoration-none">
+                            <i class="bi bi-car-front-fill" style="color:${color};font-size:0.7rem;"></i>
+                            <span class="day-room-chip-name">${r.name}</span>
+                            <div class="day-room-chip-meta">
+                                <span><i class="bi bi-people-fill"></i> ${r.entry_count}</span>
+                                ${r.deadline ? `<span class="day-room-chip-deadline">${r.deadline}</span>` : ''}
+                            </div>
+                        </a>`).join('')}
+                    </div>`
+                    : `<div class="day-rooms-col day-rooms-empty"><i class="bi bi-car-front" style="font-size:1.2rem;opacity:0.2;"></i><span>ルームなし</span></div>`;
+                return `
+                <div class="day-event-item" style="border-left-color:${color};">
+                    <div class="day-event-row">
+                        <a href="/events/detail/${e.id}" class="day-event-left text-decoration-none">
+                            ${groupBadge}
+                            <div class="day-event-title">${e.title}</div>
+                             ${location ? `<div class="day-event-time"><i class="bi bi-geo-alt me-1"></i>${location}</div>` : ''}
+                            ${time ? `<div class="day-event-time"><i class="bi bi-clock me-1"></i>${time}${end}</div>` : ''}
+                        </a>
+                        <div class="day-event-divider"></div>
+                        ${roomsCol}
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        document.getElementById('daySheet').classList.add('show');
+        document.getElementById('daySheetOverlay').classList.add('show');
+    }
+
+    // ── ボトムシートを閉じる
+    function closeDaySheet() {
+        document.getElementById('daySheet').classList.remove('show');
+        document.getElementById('daySheetOverlay').classList.remove('show');
+    }
+
+    document.getElementById('daySheetOverlay').addEventListener('click', closeDaySheet);
+
+    // ── 予定追加ボタン
+    document.getElementById('dayAddBtn').addEventListener('click', function() {
+        if (selectedDate) {
+            window.location.href = `{{ url_for("events.create_event") }}?date=${selectedDate}`;
+        }
+    });
+});
+</script>
 {% endblock %}
 
 {% endblock %}

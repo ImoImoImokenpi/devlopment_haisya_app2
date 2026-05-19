@@ -19,6 +19,9 @@ class Event(db.Model):
     # ランダムな6桁程度のコード。一意(unique)にして検索を高速化
     join_code = db.Column(db.String(10), unique=True, nullable=False)
     
+    # --- 自由記述 ---
+    description = db.Column(db.Text, nullable=True)
+
     # --- 配車・送迎設定 ---
     needs_car = db.Column(db.Boolean, default=True)
     

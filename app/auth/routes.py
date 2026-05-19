@@ -12,6 +12,9 @@ def register():
         username = request.form["username"]
         password = generate_password_hash(request.form["password"])
 
+        if User.query.filter_by(username=username).first():
+            return render_template("register.html", error="そのユーザー名はすでに使われています")
+
         user = User(username=username, password=password)
         db.session.add(user)
         db.session.commit()
