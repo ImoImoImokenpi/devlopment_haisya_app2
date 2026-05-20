@@ -75,12 +75,11 @@
 <div class="mb-4">
 
     <div class="d-flex justify-content-between align-items-center mb-2 px-1">
-        <h6 class="fw-bold mb-0">
-            メンバー
-        </h6>
+        <h6 class="fw-bold mb-0">メンバー</h6>
+        <span class="text-muted" style="font-size: 0.7rem;">{{ members|length }} 人</span>
     </div>
 
-    <div class="d-flex flex-column gap-2">
+    <div class="d-flex flex-column gap-2 member-list-scroll">
 
         {% for member in members %}
 
@@ -234,6 +233,23 @@
 
 .btn-outline-danger:active {
     transform: scale(0.98);
+}
+
+/* メンバーリスト：5人分の高さで固定してスクロール */
+.member-list-scroll {
+    max-height: 370px;
+    overflow-y: auto;
+    padding-right: 2px;
+}
+.member-list-scroll::-webkit-scrollbar {
+    width: 4px;
+}
+.member-list-scroll::-webkit-scrollbar-track {
+    background: transparent;
+}
+.member-list-scroll::-webkit-scrollbar-thumb {
+    background: #dee2e6;
+    border-radius: 4px;
 }
 </style>
 

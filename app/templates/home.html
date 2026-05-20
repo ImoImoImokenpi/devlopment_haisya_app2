@@ -50,6 +50,12 @@
     }
     .overflow-auto::-webkit-scrollbar { display: none; }
 
+    /* スマホ：左右ボタンを非表示 */
+    @media (max-width: 480px) {
+        .fc-prev-button,
+        .fc-next-button { display: none !important; }
+    }
+
     /* ボトムシート */
     .day-sheet {
         position: fixed; bottom: 0; left: 0; right: 0;
@@ -147,7 +153,7 @@
             <a href="{{ url_for('events.join_by_code') }}"
                class="btn btn-sm btn-light border rounded-pill px-3 text-muted d-flex align-items-center gap-1"
                style="font-size: 0.72rem; padding-top: 4px; padding-bottom: 4px;">
-                <i class="bi bi-hash">＃参加</i>
+                <i class="bi bi-hash">＃参加・共有</i>
             </a>
         </div>
     </div>
@@ -271,6 +277,22 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     calendar.render();
+
+    // スマホ：左右スワイプで月切り替え
+    let touchStartX = 0;
+    let touchStartY = 0;
+    calendarEl.addEventListener('touchstart', function(e) {
+        touchStartX = e.touches[0].clientX;
+        touchStartY = e.touches[0].clientY;
+    }, { passive: true });
+    calendarEl.addEventListener('touchend', function(e) {
+        const dx = e.changedTouches[0].clientX - touchStartX;
+        const dy = e.changedTouches[0].clientY - touchStartY;
+        if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 50) {
+            if (dx < 0) calendar.next();
+            else        calendar.prev();
+        }
+    }, { passive: true });
 
     calendarEl.addEventListener('click', function(e) {
         // イベントバーのクリックは eventClick に任せるのでスキップ

@@ -136,26 +136,41 @@
         
         <div class="ms-auto d-flex align-items-center">
             {% if current_user.is_authenticated %}
-                <a href="{{ url_for('profile.edit') }}" class="text-decoration-none ms-3">
-                    {% set has_icon = current_user.icon and current_user.icon != 'default.png' %}
-                    {% if has_icon %}
-                    <img src="{{ url_for('static', filename=current_user.icon) }}"
-                        alt="プロフィール"
-                        class="rounded-circle"
-                        style="width: 32px; height: 32px; object-fit: cover;
-                                border: 2px solid var(--walica-green);">
-                    {% else %}
-                    <div class="rounded-circle d-flex align-items-center justify-content-center"
-                        style="width: 32px; height: 32px; background: #e9ecef;
-                                border: 2px solid var(--walica-green); overflow: hidden;">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
-                            style="width: 20px; height: 20px; margin-top: 4px;" fill="#adb5bd">
-                            <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/>
-                        </svg>
-                    </div>
-                    {% endif %}
-                </a>
-                <a href="/logout" class="nav-link-custom">ログアウト</a>
+                {% set has_icon = current_user.icon and current_user.icon != 'default.png' %}
+                <div class="dropdown ms-3">
+                    <button class="btn p-0 border-0 bg-transparent" type="button"
+                            data-bs-toggle="dropdown" aria-expanded="false">
+                        {% if has_icon %}
+                        <img src="{{ url_for('static', filename=current_user.icon) }}"
+                            alt="プロフィール"
+                            class="rounded-circle"
+                            style="width: 32px; height: 32px; object-fit: cover;
+                                    border: 2px solid var(--walica-green);">
+                        {% else %}
+                        <div class="rounded-circle d-flex align-items-center justify-content-center"
+                            style="width: 32px; height: 32px; background: #e9ecef;
+                                    border: 2px solid var(--walica-green); overflow: hidden;">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+                                style="width: 20px; height: 20px; margin-top: 4px;" fill="#adb5bd">
+                                <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/>
+                            </svg>
+                        </div>
+                        {% endif %}
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 rounded-3 mt-2">
+                        <li>
+                            <a class="dropdown-item small py-2" href="{{ url_for('profile.edit') }}">
+                                <i class="bi bi-person me-2 text-muted"></i>プロフィール編集
+                            </a>
+                        </li>
+                        <li><hr class="dropdown-divider my-1"></li>
+                        <li>
+                            <a class="dropdown-item small py-2 text-danger" href="/logout">
+                                <i class="bi bi-box-arrow-right me-2"></i>ログアウト
+                            </a>
+                        </li>
+                    </ul>
+                </div>
             {% else %}
                 <a href="/login" class="nav-link-custom">ログイン</a>
                 <a href="/register" class="btn btn-walica-reverce ms-3 py-1 px-3" style="font-size:0.85rem;">新規登録</a>
